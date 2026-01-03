@@ -1,6 +1,9 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../lib/utils.js";
+import { sendWelcomeEmail } from "../emails/emailHandler.js";
+import { ENV } from "../lib/env.js";
+import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
     const { fullName, email, password } = req.body;
@@ -45,7 +48,13 @@ export const signup = async (req, res) => {
                 profilePic: newUser.profilePic,
             });
 
-            // TODO: send welcome email using Nodemailer
+            //send message using resend
+            try {
+                await sendWelcomeEmail(savedUser.email, savedUser.fullName, ENV.CLIENT_URL);
+            } catch(error) {
+                console.error("Failed to send welcome email: ", error);
+            }
+
         } else {
             res.status(400).json({ message: "Invalid user data" });
         }
@@ -98,4 +107,21 @@ export const logout = async(_, res) => {
     res.status(200).json({ message: "logout succesfully" });
 }
 
-// TODO: updateProfilePic, stored in cloudinary
+export const updateProfile = async(req, res) => {
+    try {
+        const { profilePic } = req.body;
+        if(!profilePic) return res.status(400).json({ message: "Profile pic is required" });
+
+        const userID = req.user._id;
+
+        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+
+        const updatedUser = await User.findByIdAndUpdate(userID, { profilePic: uploadResponse.secure_url }, { new: true }).select("-password");
+
+        res.status(200).json(updatedUser);
+        
+    } catch(error) {
+        console.log("Error in update profile: ", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
