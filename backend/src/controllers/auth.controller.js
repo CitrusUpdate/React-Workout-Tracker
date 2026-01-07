@@ -112,6 +112,17 @@ export const updateProfile = async(req, res) => {
         const { profilePic } = req.body;
         if(!profilePic) return res.status(400).json({ message: "Profile pic is required" });
 
+        // check type of file
+        if(!profilePic.startsWith("data:image/")) return res.status(400).json({ message: "Invalid file type" });
+
+        // check file size in bytes
+        const MAX_SIZE = 5 * 1024 * 1024;
+        const base64data = profilePic.split(",")[1];
+        const sizeInBytes = Buffer.byteLength(base64data, "base64");
+
+        if(sizeInBytes > MAX_SIZE) return res.status(400).json({ message: "Image too large (max 5MB)" });
+
+
         const userID = req.user._id;
 
         const uploadResponse = await cloudinary.uploader.upload(profilePic);

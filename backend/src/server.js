@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
 
 import authRoutes from "./routes/auth.route.js";
 import { connectDB } from "./lib/db.js";
@@ -11,8 +12,11 @@ const __dirname = path.resolve();
 const PORT = ENV.PORT || 3000;
 
 const app = express();
+
+app.use(helmet());
 app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
-app.use(express.json( { limit: "15mb" }));
+app.use(express.json( { limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
