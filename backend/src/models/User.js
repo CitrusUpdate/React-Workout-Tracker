@@ -15,12 +15,47 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        minglength: 6,
+        minlength: 6,
     },
 
     profilePic: {
         type: String,
         default: "",
+    },
+
+    profile: {
+        age: Number,
+        weight: Number,
+        height: Number,
+        maxes: {
+            type: Map,
+            of: Number // { "bench press: ": 120 }
+        },
+
+        goal: {
+            type: String,
+            enum: ["cut", "maintain", "bulk"],
+            default: "maintain",
+        },
+    },
+
+    preferences: {
+        units: {
+            type: String,
+            enum: ["kg", "lbs"],
+            default: "kg",
+        },
+
+        rounding: {
+            type: Number,
+            default: 2.5,
+        },
+    },
+
+    experienceLevel: {
+        type: String,
+        enum: ["beginner", "intermediate", "advanced"],
+        default: "beginner",
     },
 
 }, { timestamps: true });
