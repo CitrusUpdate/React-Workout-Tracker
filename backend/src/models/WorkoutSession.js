@@ -26,6 +26,7 @@ const WorkoutSessionsSchema = mongoose.Schema({
     notes: String,
 }, { timestamps: true });
 
+// sort by owner ascending and by date descending
 WorkoutSessionsSchema.index({ owner: 1, date: -1 });
 
 export default mongoose.model("WorkoutSession", WorkoutSessionsSchema);

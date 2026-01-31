@@ -17,6 +17,7 @@ const TrainingPlanSchema = new mongoose.Schema({
     exercises: [PlanExerciseSchema],
 }, { timestamps: true });
 
+// sort by owner ascending
 TrainingPlanSchema.index({ owner: 1 });
 
 export default mongoose.model("TrainingPlan", TrainingPlanSchema);
