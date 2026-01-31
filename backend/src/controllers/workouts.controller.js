@@ -59,3 +59,35 @@ export const getSinglePlan = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 }
+
+export const updatePlan = async (req, res) => {
+    try {
+        const plan = await TrainingPlan.findById(req.params.id);
+
+        if(!plan) return res.status(404).json({ message: "Not found" });
+        if(plan.owner.toString() !== res.user._id.toString()) return res.status(403).json({ message: "Forbidden"});
+
+        Object.assign(plan, req.body);
+        await plan.save();
+
+        res.json(plan);
+    } catch(error) {
+        console.error("updatePlan", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const deletePlan = async (req, res) => {
+    try {
+        const plan = await TrainingPlan.findById(req.params.id);
+
+        if(!plan) return res.status(404).json({ message: "Not found" });
+        if(plan.owner.toString !== res.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        await plan.deleteOne();
+        res.json({ message: "Deleted" });
+    } catch(error) {
+        console.error("deletePlan", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
