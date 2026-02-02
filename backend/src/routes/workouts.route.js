@@ -1,5 +1,5 @@
 import express from "express";
-import { createPlan, getPlans, getSinglePlan, updatePlan, deletePlan } from "../controllers/workouts.controller.js";
+import { createPlan, getPlans, getSinglePlan, updatePlan, deletePlan, instantiatePlanDay } from "../controllers/workouts.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 import { ajAuth } from "../lib/arcjet.js";
@@ -20,5 +20,8 @@ router.put("/plans/:id", protectRoute, arcjetProtection(ajAuth), updatePlan);
 
 // delete plan
 router.delete("/plans/:id", protectRoute, arcjetProtection(ajAuth), deletePlan);
+
+// instantiate plan into workout session
+router.post("/plans/:id/instantiate", protectRoute, arcjetProtection(ajAuth), instantiatePlanDay);
 
 export default router;
