@@ -1,4 +1,7 @@
+
 import TrainingPlan from "../models/TrainingPlan.js";
+import User from "../models/User.js";
+import WorkoutSession from "../models/WorkoutSession.js";
 
 // round weight for real plates
 const roundToPlate = (kg, rounding = 2.5) => Math.round(kg / rounding) * rounding;
@@ -88,6 +91,52 @@ export const deletePlan = async (req, res) => {
         res.json({ message: "Deleted" });
     } catch(error) {
         console.error("deletePlan", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+// create a workout session instance from a trainig plan
+export const instantiatePlanDay = async (req, res) => {
+    try {
+        const plan = await TrainingPlan.findById(req.params.id);
+
+        if(!plan) return res.status(404).json({ message: "Not found" });
+        if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        const user = await User.findById(req.user._id);
+
+        // for every exercise in plan, create new exercise in session
+        const exercises = plan.exercises.map((planExercise, exerciseIndex) => ({
+            name: planExercise.name, // plan name
+            order: planExercise.order ?? exerciseIndex, // if the user has set the order we take it, if not we take an array order
+            notes: planExercise.notes,  // plan notes
+            fromPlanExerciseIndex: exerciseIndex,   // reference to the exercise position in the original training plan
+            // create sets: if setsCount is 4 then it creates 4 empty sets
+            sets: Array.from({ length: planExercise.setsCount }).map(() => ({
+                // if plan has %1RM and user has max in his profile, then we count weight automatically, if not user can enter it manually
+                weight: computeWeightFromPercent(
+                    user,
+                    planExercise.name,
+                    planExercise.targetPercent1RM
+                ),
+            // user completes it after set is done: 
+            reps: null,
+            rir: null,
+            completed: false,
+            })), 
+        }));
+
+        // create session
+        const session = await WorkoutSession.create({
+            owner: req.user._id, // user who trains
+            plan: plan._id, // plan id from where session become
+            type: plan.type, // example: strength
+            exercises,  // every exercise generated higher
+        });
+
+        res.status(201).json(session);
+    } catch(error) {
+        console.error("instantiatePlanDay", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
