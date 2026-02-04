@@ -1,4 +1,3 @@
-
 import TrainingPlan from "../models/TrainingPlan.js";
 import User from "../models/User.js";
 import WorkoutSession from "../models/WorkoutSession.js";
@@ -54,7 +53,7 @@ export const getSinglePlan = async (req, res) => {
     try {   
         const plan = await TrainingPlan.findById(req.params.id)
         if(!plan) return res.status(404).json({ message: "Plan not found" });
-        if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden"});
+        if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden"}); 
 
         res.json(plan);
     } catch(error) {
@@ -68,7 +67,7 @@ export const updatePlan = async (req, res) => {
         const plan = await TrainingPlan.findById(req.params.id);
 
         if(!plan) return res.status(404).json({ message: "Not found" });
-        if(plan.owner.toString() !== res.user._id.toString()) return res.status(403).json({ message: "Forbidden"});
+        if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden"});
 
         Object.assign(plan, req.body);
         await plan.save();
@@ -85,7 +84,7 @@ export const deletePlan = async (req, res) => {
         const plan = await TrainingPlan.findById(req.params.id);
 
         if(!plan) return res.status(404).json({ message: "Not found" });
-        if(plan.owner.toString !== res.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+        if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
         await plan.deleteOne();
         res.json({ message: "Deleted" });
@@ -137,6 +136,82 @@ export const instantiatePlanDay = async (req, res) => {
         res.status(201).json(session);
     } catch(error) {
         console.error("instantiatePlanDay", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const createWorkout = async(req, res) => {
+    try {
+        if(!Array.isArray(req.body.exercises)) return res.status(400).json({ message: "Invalid payload"});
+
+        const session = await WorkoutSession.create({
+            owner: req.user._id,
+            ...req.body,
+        });
+
+        return res.status(201).json(session);
+    } catch(error) {
+        console.error("createWorkout", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const getWorkouts = async(req, res) => {
+    try {
+        // page because we want to show workouts by pages
+        const page = +req.query.page || 1;
+        // limit for how much records it can be at one page
+        const limit = Math.min(+req.query.limit || 20, 100);
+        // how much records to skip from start
+        const skip = (page - 1) * limit;
+
+        // find user sessions by the newest, with skip and limit
+        const sessions = await WorkoutSession.find({ owner: req.user._id })
+            .sort({ date: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({ page, limit, sessions });
+    } catch(error) {
+        console.error("getWorkouts", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const getSingleWorkout = async(req, res) => {
+    try {
+        const session = await WorkoutSession.findById(req.params.id);
+
+        if(!session) return res.status(404).json({ message: "Not found" });
+        if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        res.json(session);
+    } catch(error) {
+        console.error("getSingleWorkout", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const updateSet = async(req, res) => {
+    try {
+        const { sessionID, exerciseIndex, setIndex } = req.params;
+        const session = await WorkoutSession.findById(sessionID);
+
+        if(!session) return res.status(404).json({ message: "Not found" });
+        if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        // take set based on parameters
+        const set = session.exercises?.[exerciseIndex]?.sets?.[setIndex];
+        if(!set) return res.status(404).json({ message: "Set not found" });
+
+        // update set and save
+        Object.assign(set, req.body);
+        session.markModified("exercises");
+        await session.save();
+
+        res.json(session);
+    } catch(error) {
+        console.error("updateSet", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
