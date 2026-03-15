@@ -1,6 +1,9 @@
 import TrainingPlan from "../models/TrainingPlan.js";
 import User from "../models/User.js";
 import WorkoutSession from "../models/WorkoutSession.js";
+import Papa from "papaparse";
+import { PDFDocument, StandardFonts } from "pdf-lib";
+import { drawTable } from "../utils/pdfTable.js";
 
 // round weight for real plates
 const roundToPlate = (kg, rounding = 2.5) => Math.round(kg / rounding) * rounding;
@@ -212,6 +215,321 @@ export const updateSet = async(req, res) => {
         res.json(session);
     } catch(error) {
         console.error("updateSet", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+/*
+    exports to other files
+*/
+
+export const exportPlanCsv = async(req, res) => {
+    try {
+        const plan = await TrainingPlan.findById(req.params.id);
+        if(!plan) return res.status(404).json({ message: "Not found" });
+        if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        const rows = plan.exercises.map((exercise, index) => ({
+            index: index + 1,
+            name: exercise.name,
+            sets: exercise.setsCount,
+            targetRir: exercise.targetRir,
+            targetPercent1RM: exercise.targetPercent1RM,
+            notes: exercise.notes || ""
+        }));
+
+        const csv = Papa.unparse(rows);
+
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", `attachment; filename=${plan.name}.csv`);
+        res.send(csv);
+    } catch(error) {
+        console.error("exportPlanCsv", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const exportWorkoutCsv = async(req, res) => {
+    try {
+        const session = await WorkoutSession.findById(req.params.id);
+
+        if(!session) return res.status(404).json({ message: "Not found" });
+        if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        const rows = [];
+        session.exercises.forEach(ex => {
+            ex.sets.forEach((set, setIndex) => {
+                rows.push({
+                    exercise: ex.name,
+                    exerciseNotes: ex.notes || "",
+                    sets: setIndex + 1,
+                    weight: set.weight,
+                    reps: set.reps,
+                    rir: set.rir,
+                    completed: set.completed,
+                    setNotes: set.notes || ""
+                });
+            });
+        });
+
+        const csv = Papa.unparse(rows);
+
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", `attachment; filename=workout.csv`);
+        res.send(csv);
+    } catch(error) {
+        console.error("exportWorkoutCsv", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const exportAllSessionsCsv = async(req, res) => {
+    try {
+        const sessions = await WorkoutSession.find({ owner: req.user._id }).sort({ date: 1});
+
+        const rows = [];
+
+        sessions.forEach(session => {
+            session.exercises.forEach(ex => {
+                ex.sets.forEach((set, i) => {
+                    rows.push({
+                        date: session.date.toISOString().split("T")[0],
+                        sessionNotes: session.notes || "",
+                        exercise: ex.name,
+                        exerciseNotes: ex.notes || "",
+                        setNumber: i + 1,
+                        weight: set.weight,
+                        reps: set.reps,
+                        rir: set.rir,
+                        completed: set.completed,
+                        setNotes: set.notes || ""
+                    });
+                });
+            });
+        });
+
+        const csv = Papa.unparse(rows);
+
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", "attachment; filename=all-sessions.csv");
+        res.send(csv);
+    } catch(error) {
+        console.error("exportAllSessionsCsv", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const exportPlanPdf = async(req, res) => {
+    try {
+        const plan = await TrainingPlan.findById(req.params.id);
+
+        if(!plan) return res.status(404).json({ message: "Not found"});
+        if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        const pdfDoc = await PDFDocument.create();
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+        let page = pdfDoc.addPage();
+
+        const headers = [
+            "#",
+            "Exercise",
+            "Sets",
+            "Target RIR",
+            "%1RM",
+            "Notes"
+        ];
+
+        const rows = plan.exercises.map((ex, i) => [
+            i + 1,
+            ex.name,
+            ex.setsCount,
+            ex.targetRir,
+            ex.targetPercent1RM,
+            ex.notes || ""
+        ]);
+
+        page = drawTable({
+            pdfDoc,
+            page,
+            headers,
+            rows,
+            font,
+            title: `Training Plan: ${plan.name}`,
+            meta: [
+                `Type ${plan.type}`,
+                `Exercises: ${plan.exercises.length}`
+            ]
+        });
+
+        const pdfBytes = await pdfDoc.save();
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename=${plan.name}.pdf`);
+        res.send(Buffer.from(pdfBytes));
+    } catch(error) {
+        console.error("exportPlanPdf", error);
+        res.status(500).json({ message: "Internal server error "});
+    }
+}
+
+export const exportWorkoutPdf = async(req, res) => {
+    try {
+        const session = await WorkoutSession.findById(req.params.id);
+        if(!session) return res.status(404).json({ message: "Not found" });
+        if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        const pdfDoc = await PDFDocument.create();
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+        let page = pdfDoc.addPage();
+
+        const headers = [
+            "Exercise",
+            "Set",
+            "Weight",
+            "Reps",
+            "RIR",
+            "Completed",
+            "Notes"
+        ];
+
+        const rows = [];
+
+        session.exercises.forEach(ex => {
+            ex.sets.forEach((set, i) => {
+                rows.push([
+                    ex.name,
+                    i + 1,
+                    set.weight,
+                    set.reps,
+                    set.rir,
+                    set.completed ? "Yes" : "No",
+                    set.notes || ""
+                ]);
+            });
+        });
+
+        page = drawTable({
+            pdfDoc,
+            page,
+            headers,
+            rows,
+            font,
+            title: `Workout ${session.date.toISOString().split("T")[0]}`,
+            meta: [
+                `Type: ${session.type}`,
+                `Exercises: ${session.exercises.length}`,
+                `Notes: ${session.notes || "-"}`
+            ]
+        });
+
+        const pdfBytes = await pdfDoc.save();
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "attachment; filename=workout.pdf");
+        res.send(Buffer.from(pdfBytes));
+    } catch(error) {
+        console.error("exportWorkoutPdf", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const exportAllSessionsPdf = async(req, res) => {
+    try {
+        const session = await WorkoutSession.find({ owner: req.user._id }.sort({ date: 1 }));
+        if(!session) return res.status(404).json({ message: "Not found" });
+        if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+
+        const pdfDoc = await PDFDocument.create();
+        const font = await pdfDoc.embedFont(StandardFonts.StandardFonts.Helvetica);
+
+        let page = pdfDoc.addPage();
+
+        const headers = [
+            "Date",
+            "Exercise",
+            "Set",
+            "Weight",
+            "Reps",
+            "RIR",
+            "Completed",
+            "Notes"
+        ];
+
+        const rows = [];
+
+        session.exercises.forEach(ex => {
+            ex.sets.forEach((set, i) => {
+                rows.push([
+                    session.date,
+                    ex.name,
+                    i + 1,
+                    set.weight,
+                    set.reps,
+                    set.rir,
+                    set.completed ? "Yes" : "No",
+                    set.notes || ""
+                ]);
+            });
+        });
+
+        page = drawTable({
+            pdfDoc,
+            page,
+            headers,
+            rows,
+            font,
+            title: `Workout ${session.date.toISOString().split("T")[0]}`,
+            meta: [
+                `Type: ${session.type}`,
+                `Exercises: ${session.exercises.length}`,
+                `Notes: ${session.notes || "-"}`
+            ]
+        });
+
+        const pdfBytes = await pdfDoc.save();
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", "attachment; filename=workout.pdf");
+        res.send(Buffer.from(pdfBytes));
+    } catch(error) {
+        console.error("exportWorkoutPdf", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const importPlanCsv = async(req, res) => {
+    try {
+        if(!req.file) return res.status(400).json({ message: "CSV file required" });
+
+        const csvString = req.file.buffer.toString();
+
+        const { data, errors } = Papa.parse(csvString, {
+            header: true,
+            skipEmptyLines: true,
+        });
+
+        if(errors.length) return res.status(400).json({ message: "CSV parse error", errors });
+
+        const exercises = data.map((row, index) => ({
+            name: row.name,
+            order: index,
+            setsCount: Number(row.sets) || 0,
+            targetRir: row.targetRir ? Number(row.targetRir) : null,
+            targetPercent1RM: row.targetPercent1RM ? Number(row.targetPercent1RM) : null,
+            notes: row.notes || "",
+        }));
+
+        const plan = await TrainingPlan.create({
+            name: req.body.name || "Imported Plan",
+            owner: req.user._id,
+            exercises,
+        });
+
+        res.status(201).json(plan);
+    } catch(error) {
+        console.error("importPlanCsv", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
