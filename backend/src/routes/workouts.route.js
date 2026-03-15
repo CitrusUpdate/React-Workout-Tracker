@@ -23,7 +23,7 @@ router.put("/plans/:id", protectRoute, arcjetProtection(ajAuth), updatePlan);
 router.delete("/plans/:id", protectRoute, arcjetProtection(ajAuth), deletePlan);
 
 // instantiate plan into workout session
-router.post("/plans/:id/instantiate", protectRoute, arcjetProtection(ajAuth), instantiatePlanDay);
+router.post("/plans/:id/days/:dayIndex/instantiate", protectRoute, arcjetProtection(ajAuth), instantiatePlanDay);
 
 // create manual workout (without plan)
 router.post("/workouts", protectRoute, arcjetProtection(ajAuth), createWorkout);

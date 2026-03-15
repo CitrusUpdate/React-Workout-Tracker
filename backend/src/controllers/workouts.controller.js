@@ -22,7 +22,7 @@ const computeWeightFromPercent = (user, exerciseName, percent) => {
 
 export const createPlan = async (req, res) => {
     try {
-        const { name, description, type = "strength", exercises = [] } = req.body;
+        const { name, description, type = "strength", days = [] } = req.body;
         if(!name) return res.status(400).json({ message: "Name is required" });
 
         const plan = await TrainingPlan.create({
@@ -30,7 +30,7 @@ export const createPlan = async (req, res) => {
             description,
             type,
             owner: req.user._id,
-            exercises,
+            days
         });
 
         res.status(201).json(plan);
@@ -100,15 +100,20 @@ export const deletePlan = async (req, res) => {
 // create a workout session instance from a trainig plan
 export const instantiatePlanDay = async (req, res) => {
     try {
-        const plan = await TrainingPlan.findById(req.params.id);
+        const { id, dayIndex } = req.params;
+
+        const plan = await TrainingPlan.findById(id);
 
         if(!plan) return res.status(404).json({ message: "Not found" });
         if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
+        const day = plan.days?.[dayIndex];
+        if(!day) return res.status(404).json({ message: "Plan day not found" });
+
         const user = await User.findById(req.user._id);
 
         // for every exercise in plan, create new exercise in session
-        const exercises = plan.exercises.map((planExercise, exerciseIndex) => ({
+        const exercises = day.exercises.map((planExercise, exerciseIndex) => ({
             name: planExercise.name, // plan name
             order: planExercise.order ?? exerciseIndex, // if the user has set the order we take it, if not we take an array order
             notes: planExercise.notes,  // plan notes
@@ -132,8 +137,9 @@ export const instantiatePlanDay = async (req, res) => {
         const session = await WorkoutSession.create({
             owner: req.user._id, // user who trains
             plan: plan._id, // plan id from where session become
+            dayIndex: Number(dayIndex),
             type: plan.type, // example: strength
-            exercises,  // every exercise generated higher
+            exercises // every exercise generated higher
         });
 
         res.status(201).json(session);
@@ -229,14 +235,21 @@ export const exportPlanCsv = async(req, res) => {
         if(!plan) return res.status(404).json({ message: "Not found" });
         if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
-        const rows = plan.exercises.map((exercise, index) => ({
-            index: index + 1,
-            name: exercise.name,
-            sets: exercise.setsCount,
-            targetRir: exercise.targetRir,
-            targetPercent1RM: exercise.targetPercent1RM,
-            notes: exercise.notes || ""
-        }));
+        const rows = [];
+
+        plan.days.forEach(day => {
+            day.exercises.forEach((exercise, index) => {
+                rows.push({
+                    day: day.name,
+                    index: index + 1,
+                    name: exercise.name,
+                    sets: exercise.setsCount,
+                    targetRir: exercise.targetRir,
+                    targetPercent1RM: exercise.targetPercent1RM,
+                    notes: exercise.notes || ""
+                });
+            });
+        });
 
         const csv = Papa.unparse(rows);
 
@@ -332,6 +345,7 @@ export const exportPlanPdf = async(req, res) => {
         let page = pdfDoc.addPage();
 
         const headers = [
+            "Day",
             "#",
             "Exercise",
             "Sets",
@@ -340,14 +354,21 @@ export const exportPlanPdf = async(req, res) => {
             "Notes"
         ];
 
-        const rows = plan.exercises.map((ex, i) => [
-            i + 1,
-            ex.name,
-            ex.setsCount,
-            ex.targetRir,
-            ex.targetPercent1RM,
-            ex.notes || ""
-        ]);
+        const rows = [];
+
+        plan.days.forEach(day => {
+            day.exercises.forEach((ex, i) => {
+                rows.push([
+                    day.name,
+                    i + 1,
+                    ex.name,
+                    ex.setsCount,
+                    ex.targetRir,
+                    ex.targetPercent1RM,
+                    ex.notes || ""
+                ]);
+            });
+        });
 
         page = drawTable({
             pdfDoc,
@@ -358,7 +379,7 @@ export const exportPlanPdf = async(req, res) => {
             title: `Training Plan: ${plan.name}`,
             meta: [
                 `Type ${plan.type}`,
-                `Exercises: ${plan.exercises.length}`
+                `Days: ${plan.days.length}`
             ]
         });
 
@@ -437,12 +458,12 @@ export const exportWorkoutPdf = async(req, res) => {
 
 export const exportAllSessionsPdf = async(req, res) => {
     try {
-        const session = await WorkoutSession.find({ owner: req.user._id }.sort({ date: 1 }));
-        if(!session) return res.status(404).json({ message: "Not found" });
-        if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
+        const sessions = await WorkoutSession
+            .find({ owner: req.user._id })
+            .sort({ date: 1 });
 
         const pdfDoc = await PDFDocument.create();
-        const font = await pdfDoc.embedFont(StandardFonts.StandardFonts.Helvetica);
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
         let page = pdfDoc.addPage();
 
@@ -459,18 +480,21 @@ export const exportAllSessionsPdf = async(req, res) => {
 
         const rows = [];
 
-        session.exercises.forEach(ex => {
-            ex.sets.forEach((set, i) => {
-                rows.push([
-                    session.date,
-                    ex.name,
-                    i + 1,
-                    set.weight,
-                    set.reps,
-                    set.rir,
-                    set.completed ? "Yes" : "No",
-                    set.notes || ""
-                ]);
+        sessions.forEach(session => {
+            session.exercises.forEach(ex => {
+                ex.sets.forEach((set, i) => {
+                    rows.push([
+                        session.date,
+                        ex.name,
+                        i + 1,
+                        set.weight,
+                        set.reps,
+                        set.rir,
+                        set.completed ? "Yes" : "No",
+                        set.notes || ""
+                    ]);
+                })
+                
             });
         });
 
@@ -480,11 +504,9 @@ export const exportAllSessionsPdf = async(req, res) => {
             headers,
             rows,
             font,
-            title: `Workout ${session.date.toISOString().split("T")[0]}`,
+            title: "All workout sessions",
             meta: [
-                `Type: ${session.type}`,
-                `Exercises: ${session.exercises.length}`,
-                `Notes: ${session.notes || "-"}`
+                `Sessions ${sessions.length}`
             ]
         });
 
@@ -512,19 +534,32 @@ export const importPlanCsv = async(req, res) => {
 
         if(errors.length) return res.status(400).json({ message: "CSV parse error", errors });
 
-        const exercises = data.map((row, index) => ({
-            name: row.name,
-            order: index,
-            setsCount: Number(row.sets) || 0,
-            targetRir: row.targetRir ? Number(row.targetRir) : null,
-            targetPercent1RM: row.targetPercent1RM ? Number(row.targetPercent1RM) : null,
-            notes: row.notes || "",
-        }));
+        const daysMap = new Map();
+        data.forEach(row => {
+            const dayName = row.day || "Day 1";
+            
+            if(!daysMap.has(dayName)) {
+                daysMap.set(dayName, {
+                    name: dayName,
+                    exercises: []
+                });
+            }
+
+            daysMap.get(dayName).exercises.push({
+                name: row.name,
+                setsCount: Number(row.sets) || 0,
+                targetRir: row.targetRir ? Number(row.targetRir) : null,
+                targetPercent1RM: row.targetPercent1RM ? Number(row.targetPercent1RM) : null,
+                notes: row.notes || ""
+            });
+        });
+
+        const days = Array.from(daysMap.values());
 
         const plan = await TrainingPlan.create({
             name: req.body.name || "Imported Plan",
             owner: req.user._id,
-            exercises,
+            days
         });
 
         res.status(201).json(plan);

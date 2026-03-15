@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 
 const PlanExerciseSchema = new mongoose.Schema({
     name: { type: String, required: true },
@@ -9,12 +9,18 @@ const PlanExerciseSchema = new mongoose.Schema({
     notes: { type: String, default: "" },
 });
 
+const PlanDaySchema = new mongoose.Schema({
+    name: { type: String, required: true }, 
+    order: { type: Number, default: 0 },
+    exercises: [PlanExerciseSchema]
+});
+
 const TrainingPlanSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: String,
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     type: { type: String, enum: ["strength", "running", "hybrid"], default: "strength" },
-    exercises: [PlanExerciseSchema],
+    days: [PlanDaySchema],
 }, { timestamps: true });
 
 // sort by owner ascending
