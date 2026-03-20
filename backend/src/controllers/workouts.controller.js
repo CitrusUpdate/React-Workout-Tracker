@@ -547,6 +547,7 @@ export const importPlanCsv = async(req, res) => {
 
             daysMap.get(dayName).exercises.push({
                 name: row.name,
+                order: daysMap.get(dayName).exercises.length,
                 setsCount: Number(row.sets) || 0,
                 targetRir: row.targetRir ? Number(row.targetRir) : null,
                 targetPercent1RM: row.targetPercent1RM ? Number(row.targetPercent1RM) : null,
