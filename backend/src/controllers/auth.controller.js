@@ -4,9 +4,10 @@ import { generateToken } from "../lib/utils.js";
 import { sendWelcomeEmail } from "../emails/emailHandler.js";
 import { ENV } from "../lib/env.js";
 import cloudinary from "../lib/cloudinary.js";
+import { isValidTimezone } from "../utils/time.js";
 
 export const signup = async (req, res) => {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, timezone } = req.body;
 
     try {
         if(!fullName || !email || !password) {
@@ -34,7 +35,8 @@ export const signup = async (req, res) => {
         const newUser = new User({
             fullName,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            timezone: isValidTimezone(timezone) ? timezone : "UTC"
         });
 
         if(newUser) {
@@ -134,5 +136,24 @@ export const updateProfile = async(req, res) => {
     } catch(error) {
         console.log("Error in update profile: ", error);
         return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const updateTimezone = async(req, res) => {
+    try {
+        const { timezone } = req.body;
+        if(!timezone) return res.status(400).json({ message: "Timezone required" });
+        if(!isValidTimezone(timezone)) return res.status(400).json({ message: "Invalid timezone" });
+        
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            { timezone },
+            { new: true }
+        );
+
+        res.json(user);
+    } catch(error) {
+        console.error("updateTimezone", error);
+        res.status(500).json({ message: "Internal server error" });
     }
 }

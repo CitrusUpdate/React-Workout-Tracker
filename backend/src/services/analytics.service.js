@@ -1,6 +1,7 @@
 import WorkoutSession from "../models/WorkoutSession.js";
-import User from "../models/User.js";
 import { canSendNotification, createNotification } from "./notification.services.js";
+
+// TODO: Optimization of these algorithms
 
 /* 
     check progress:
@@ -22,77 +23,73 @@ const WEEKS_MAP = {
     cut: 7,
 };
 
-export const runProgressAnalytics = async () => {
-    const users = await User.find();
+export const runProgressAnalyticsForUser = async (user) => {
+    const goal = user.profile?.goal || "maintain";
+    const weeks = WEEKS_MAP[goal];
 
-    for(const user of users) {
-        const goal = user.profile?.goal || "maintain";
-        const weeks = WEEKS_MAP[goal];
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - weeks * 7);
 
-        const sinceDate = new Date();
-        sinceDate.setDate(sinceDate.getDate() - weeks * 7);
+    const sessions = await WorkoutSession.find({
+        owner: user._id,
+        date: { $gte: sinceDate},
+    }).sort({ date: 1 });
 
-        const sessions = await WorkoutSession.find({
-            owner: user._id,
-            date: { $gte: sinceDate},
-        }).sort({ date: 1 });
+    if(!sessions.length) return;
 
-        if(!sessions.length) continue;
+    const exerciseMap = new Map();
 
-        const exerciseMap = new Map();
+    sessions.forEach(session => {
+        session.exercises.forEach(ex => {
+            if(!exerciseMap.has(ex.name)) {
+                exerciseMap.set(ex.name, []);
+            }
 
-        sessions.forEach(session => {
-            session.exercises.forEach(ex => {
-                if(!exerciseMap.has(ex.name)) {
-                    exerciseMap.set(ex.name, []);
+            ex.sets.forEach(set => {
+                if(set.completed && set.weight !== null && set.reps !== null) {
+                    exerciseMap.get(ex.name).push({
+                        weight: set.weight || 0,
+                        reps: set.reps || 0,
+                        date: session.date,
+                    });
                 }
-
-                ex.sets.forEach(set => {
-                    if(set.completed && set.weight !== null && set.reps !== null) {
-                        exerciseMap.get(ex.name).push({
-                            weight: set.weight || 0,
-                            reps: set.reps || 0,
-                            date: session.date,
-                        });
-                    }
-                });
             });
         });
+    });
 
-        for(const [exerciseName, sets] of exerciseMap.entries()) {
-            if(sets.length < 2) continue;
+    for(const [exerciseName, sets] of exerciseMap.entries()) {
+        if(sets.length < 2) continue;
 
-            const first = sets[0];
-            const last = sets[sets.length - 1];
+        const first = sets[0];
+        const last = sets[sets.length - 1];
 
-            const noWeightProgress = last.weight <= first.weight;
-            const noRepsProgress = last.reps <= first.reps;
+        const noWeightProgress = last.weight <= first.weight;
+        const noRepsProgress = last.reps <= first.reps;
 
-            if(noWeightProgress && noRepsProgress) {
-                // if no progress we suggest to lower weight 10%
-                const suggestionWeight = Math.round(last.weight * 0.9);
+        if(noWeightProgress && noRepsProgress) {
+            // if no progress we suggest to lower weight 10%
+            const suggestionWeight = Math.round(last.weight * 0.9);
 
-                const canSend = await canSendNotification({
-                    userId: user._id,
-                    type: "progress",
+            const canSend = await canSendNotification({
+                userId: user._id,
+                type: "progress",
+                exercise: exerciseName,
+                sinceDate,
+            });
+
+            if(!canSend) continue;
+
+            await createNotification({
+                userId: user._id,
+                type: "progress",
+                title: `No progress: ${exerciseName}`,
+                message: `You haven't made any progress in ${weeks}. Consider a deload (-10%)`,
+                meta: {
                     exercise: exerciseName,
-                    sinceDate,
-                });
-
-                if(!canSend) continue;
-
-                await createNotification({
-                    userId: user._id,
-                    type: "progress",
-                    title: `No progress: ${exerciseName}`,
-                    message: `You haven't made any progress in ${weeks}. Consider a deload (-10%)`,
-                    meta: {
-                        exercise: exerciseName,
-                        currentWeight: last.weight,
-                        suggestedWeight: suggestionWeight,
-                    },
-                });
-            }
+                    currentWeight: last.weight,
+                    suggestedWeight: suggestionWeight,
+                },
+            });
         }
     }
 };
@@ -104,55 +101,78 @@ export const runProgressAnalytics = async () => {
         - weight is probably to light so its better to increase weight and lower reps
 */
 
-export const runHighRepsAnalysis = async() => {
-    const users = await User.find();
-
+export const runRepsAnalysisForUser = async(user) => {
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - 7);
 
-    for(const user of users) {
-        const sessions = await WorkoutSession.find({
-            owner: user._id,
-        }).sort({ date: -1 }).limit(5);
+    
+    const sessions = await WorkoutSession.find({
+        owner: user._id,
+    }).sort({ date: -1 }).limit(5);
 
-        for(const session of sessions) {
-            for(const ex of session.exercises) {
-                let notified = false;
+    for(const session of sessions) {
+        for(const ex of session.exercises) {
+            let notified = false;
 
-                for(const set of ex.sets) {
-                    if(!set.completed) continue;
+            for(const set of ex.sets) {
+                if(!set.completed) continue;
 
-                    if(set.reps > 13 && !notified) {
-                        const newWeight = (set.weight || 0) + 2.5;
+                if(set.reps > 13 && !notified) {
+                    const newWeight = (set.weight || 0) + 2.5;
 
-                        const canSend = await canSendNotification({
-                            userId: user._id,
-                            type: "volume",
+                    const canSend = await canSendNotification({
+                        userId: user._id,
+                        type: "volume",
+                        exercise: ex.name,
+                        sinceDate,
+                    });
+
+                    if(!canSend) continue;
+
+                    await createNotification({
+                        userId: user._id,
+                        type: "volume",
+                        title: `Too many reps: ${ex.name}`,
+                        message: `You did ${set.reps} reps. Consider increasing weight (+2.5kg)`,
+                        meta: {
                             exercise: ex.name,
-                            sinceDate,
-                        });
+                            currentWeight: set.weight,
+                            suggestedWeight: newWeight,
+                        },
+                    });
 
-                        if(!canSend) continue;
+                    notified = true;
+                } else if(set.reps < 5 && !notified) {
+                    const newWeight = Math.max((set.weight || 0) - 2.5, 0);
 
-                        await createNotification({
-                            userId: user._id,
-                            type: "volume",
-                            title: `Too many reps: ${ex.name}`,
-                            message: `You did ${set.reps} reps. Consider increasing weight (+2.5kg)`,
-                            meta: {
-                                exercise: ex.name,
-                                currentWeight: set.weight,
-                                suggestedWeight: newWeight,
-                            },
-                        });
+                    const canSend = await canSendNotification({
+                        userId: user._id,
+                        type: "volume",
+                        exercise: ex.name,
+                        sinceDate,
+                    });
 
-                        notified = true;
-                    }
+                    if(!canSend) continue;
+
+                    await createNotification({
+                        userId: user._id,
+                        type: "volume",
+                        title: `Too few reps: ${ex.name}`,
+                        message: `You did only ${set.reps} reps. Decrease weight (-2.5kg)`,
+                        meta: {
+                            exercise: ex.name,
+                            currentWeight: set.weight,
+                            suggestedWeight: newWeight,
+                        },
+                    });
+
+                    notified = true;
                 }
             }
         }
     }
 };
+
 
 /*
     too far from muscle failure
@@ -162,128 +182,121 @@ export const runHighRepsAnalysis = async() => {
         - he has a lot of repetitions, he should do closer to muscle failure for better progress
 */
 
-export const runRirAnalysis = async() => {
-    const users = await User.find();
+export const runRirAnalysisForUser = async(user) => {
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - 7); // last week
 
-    for(const user of users) {
+    const sessions = await WorkoutSession.find({
+        owner: user._id,
+        date: { $gte: sinceDate },
+    });
 
-        const sessions = await WorkoutSession.find({
-            owner: user._id,
-            date: { $gte: sinceDate },
-        });
+    const notifiedExercises = new Set();
 
-        const notifiedExercises = new Set();
+    for(const session of sessions) {
+        for(const ex of session.exercises) {
+            if(notifiedExercises.has(ex.name)) continue;
 
-        for(const session of sessions) {
-            for(const ex of session.exercises) {
-                if(notifiedExercises.has(ex.name)) continue;
+            let highRirSets = 0;
+            let totalSets = 0;
 
-                let highRirSets = 0;
-                let totalSets = 0;
+            for(const set of ex.sets) {
+                if(!set.completed) continue;
 
-                for(const set of ex.sets) {
-                    if(!set.completed) continue;
+                if(set.rir != null) {
+                    totalSets++;
 
-                    if(set.rir != null) {
-                        totalSets++;
-
-                        if(set.rir >= 4) {
-                            highRirSets++;
-                        }
+                    if(set.rir >= 4) {
+                        highRirSets++;
                     }
                 }
+            }
 
-                if(totalSets === 0) continue;
+            if(totalSets === 0) continue;
 
-                const ratio = highRirSets / totalSets;
+            const ratio = highRirSets / totalSets;
 
-                // if most of sets was to light
-                if(ratio >= 0.6) {
-                    const canSend = await canSendNotification({
-                        userId: user._id,
-                        type: "rir",
+            // if most of sets was to light
+            if(ratio >= 0.6) {
+                const canSend = await canSendNotification({
+                    userId: user._id,
+                    type: "rir",
+                    exercise: ex.name,
+                    sinceDate,
+                });
+
+                if(!canSend) continue;
+
+                await createNotification({
+                    userId: user._id,
+                    type: "rir",
+                    title: `Too easy ${ex.name}`,
+                    message: `Most of your sets had high RIR (${highRirSets}/${totalSets}). Train closer to failure`,
+                    meta: {
                         exercise: ex.name,
-                        sinceDate,
-                    });
+                        highRirSets,
+                        totalSets,
+                    },
+                });
 
-                    if(!canSend) continue;
-
-                    await createNotification({
-                        userId: user._id,
-                        type: "rir",
-                        title: `Too easy ${ex.name}`,
-                        message: `Most of your sets had high RIR (${highRirSets}/${totalSets}). Train closer to failure`,
-                        meta: {
-                            exercise: ex.name,
-                            highRirSets,
-                            totalSets,
-                        },
-                    });
-
-                    notifiedExercises.add(ex.name);
-                }
+                notifiedExercises.add(ex.name);
             }
         }
     }
 };
 
-export const runWeightAnalysis = async() => {
-    const users = await User.find();
+export const runWeightAnalysisForUser = async(user) => {
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - 7);
 
-    for(const user of users) {
-        const history = user.weightHistory;
-        if(!history || history.length < 2) continue;
+    const history = user.weightHistory;
+    if(!history || history.length < 2) return;
 
-        const last = history[history.length - 1];
-        const prev = history[history.length - 2];
+    const last = history[history.length - 1];
+    const prev = history[history.length - 2];
 
-        const diff = last.value - prev.value;
-        const goal = user.profile?.goal || "maintain";
+    const diff = last.value - prev.value;
+    const goal = user.profile?.goal || "maintain";
 
-        const canSend = await canSendNotification({
+    const canSend = await canSendNotification({
+        userId: user._id,
+        type: "system",
+        sinceDate,
+    });
+
+    if(!canSend) return;
+
+    // cut
+    if(goal === "cut" && diff >= 0) {
+        await createNotification({
             userId: user._id,
             type: "system",
-            sinceDate,
+            title: "Weight not dropping",
+            message: "Your weight is not decreasing. Consider lowering calories",
+            meta: { diff },
         });
-
-        if(!canSend) continue;
-
-        // cut
-        if(goal === "cut" && diff >= 0) {
-            await createNotification({
-                userId: user._id,
-                type: "system",
-                title: "Weight not dropping",
-                message: "Your weight is not decreasing. Consider lowering calories",
-                meta: { diff },
-            });
-        }
-
-        // bulk
-        if(goal === "bulk" && diff <= 0) {
-            await createNotification({
-                userId: user._id,
-                type: "system",
-                title: "Weight not increasing",
-                message: "Your weight is not increasing. Consider eating more calories.",
-                meta: { diff },
-            });
-        }
-
-        // maintain
-        if(goal === "maintain" && Math.abs(diff) > 1) {
-            await createNotification({
-                userId: user._id,
-                type: "system",
-                title: "Weight unstable",
-                message: "Your weight fluctuates too much. Adjust calories slightly",
-                meta: { diff },
-            });
-        }
-
     }
-}
+
+    // bulk
+    if(goal === "bulk" && diff <= 0) {
+        await createNotification({
+            userId: user._id,
+            type: "system",
+            title: "Weight not increasing",
+            message: "Your weight is not increasing. Consider eating more calories.",
+            meta: { diff },
+        });
+    }
+
+    // maintain
+    if(goal === "maintain" && Math.abs(diff) > 1) {
+        await createNotification({
+            userId: user._id,
+            type: "system",
+            title: "Weight unstable",
+            message: "Your weight fluctuates too much. Adjust calories slightly",
+            meta: { diff },
+        });
+    }
+
+};

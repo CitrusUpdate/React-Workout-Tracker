@@ -66,9 +66,14 @@ const userSchema = new mongoose.Schema({
     weightHistory: [
         {
             value: Number,
-            date: { type: Date, default: Date.now }
+            date: { type: Date, default: Date.now },
         }
-    ]
+    ],
+
+    timezone: {
+        type: String,
+        default: "UTC",
+    },
 
 }, { timestamps: true });
 
