@@ -10,6 +10,7 @@ import { connectDB } from "./lib/db.js";
 import { ENV } from "./lib/env.js";
 import notificationRoutes from "./routes/notifications.route.js";
 import userRoutes from "./routes/user.route.js";
+import { startAnalyticsJob } from "./job/analytics.job.js";
 
 const __dirname = path.resolve();
 const PORT = ENV.PORT || 3000;
@@ -43,4 +44,6 @@ if(ENV.NODE_ENV === "production") {
 app.listen(PORT, () => {
     console.log("Server running on port ", PORT);
     connectDB();
+
+    startAnalyticsJob();
 });
