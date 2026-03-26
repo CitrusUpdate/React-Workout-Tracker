@@ -27,6 +27,11 @@ const userSchema = new mongoose.Schema({
         age: Number,
         weight: Number,
         height: Number,
+        gender: {
+            type: String,
+            enum: ["male", "female"],
+        },
+
         maxes: {
             type: Map,
             of: Number // { "bench press: ": 120 }
@@ -57,6 +62,13 @@ const userSchema = new mongoose.Schema({
         enum: ["beginner", "intermediate", "advanced"],
         default: "beginner",
     },
+
+    weightHistory: [
+        {
+            value: Number,
+            date: { type: Date, default: Date.now }
+        }
+    ]
 
 }, { timestamps: true });
 

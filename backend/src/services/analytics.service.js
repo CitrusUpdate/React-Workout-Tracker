@@ -1,6 +1,6 @@
 import WorkoutSession from "../models/WorkoutSession.js";
 import User from "../models/User.js";
-import { createNotification } from "./notification.services.js";
+import { canSendNotification, createNotification } from "./notification.services.js";
 
 /* 
     check progress:
@@ -48,7 +48,7 @@ export const runProgressAnalytics = async () => {
                 }
 
                 ex.sets.forEach(set => {
-                    if(set.completed && set.weight && set.reps) {
+                    if(set.completed && set.weight !== null && set.reps !== null) {
                         exerciseMap.get(ex.name).push({
                             weight: set.weight || 0,
                             reps: set.reps || 0,
@@ -71,6 +71,15 @@ export const runProgressAnalytics = async () => {
             if(noWeightProgress && noRepsProgress) {
                 // if no progress we suggest to lower weight 10%
                 const suggestionWeight = Math.round(last.weight * 0.9);
+
+                const canSend = await canSendNotification({
+                    userId: user._id,
+                    type: "progress",
+                    exercise: exerciseName,
+                    sinceDate,
+                });
+
+                if(!canSend) continue;
 
                 await createNotification({
                     userId: user._id,
@@ -98,6 +107,9 @@ export const runProgressAnalytics = async () => {
 export const runHighRepsAnalysis = async() => {
     const users = await User.find();
 
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - 7);
+
     for(const user of users) {
         const sessions = await WorkoutSession.find({
             owner: user._id,
@@ -112,6 +124,15 @@ export const runHighRepsAnalysis = async() => {
 
                     if(set.reps > 13 && !notified) {
                         const newWeight = (set.weight || 0) + 2.5;
+
+                        const canSend = await canSendNotification({
+                            userId: user._id,
+                            type: "volume",
+                            exercise: ex.name,
+                            sinceDate,
+                        });
+
+                        if(!canSend) continue;
 
                         await createNotification({
                             userId: user._id,
@@ -143,10 +164,10 @@ export const runHighRepsAnalysis = async() => {
 
 export const runRirAnalysis = async() => {
     const users = await User.find();
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - 7); // last week
 
     for(const user of users) {
-        const sinceDate = new Date();
-        sinceDate.setDate(sinceDate.getDate() - 7); // last week
 
         const sessions = await WorkoutSession.find({
             owner: user._id,
@@ -179,7 +200,16 @@ export const runRirAnalysis = async() => {
                 const ratio = highRirSets / totalSets;
 
                 // if most of sets was to light
-                if(ratio >= 0.6 && !notified) {
+                if(ratio >= 0.6) {
+                    const canSend = await canSendNotification({
+                        userId: user._id,
+                        type: "rir",
+                        exercise: ex.name,
+                        sinceDate,
+                    });
+
+                    if(!canSend) continue;
+
                     await createNotification({
                         userId: user._id,
                         type: "rir",
@@ -198,3 +228,62 @@ export const runRirAnalysis = async() => {
         }
     }
 };
+
+export const runWeightAnalysis = async() => {
+    const users = await User.find();
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - 7);
+
+    for(const user of users) {
+        const history = user.weightHistory;
+        if(!history || history.length < 2) continue;
+
+        const last = history[history.length - 1];
+        const prev = history[history.length - 2];
+
+        const diff = last.value - prev.value;
+        const goal = user.profile?.goal || "maintain";
+
+        const canSend = await canSendNotification({
+            userId: user._id,
+            type: "system",
+            sinceDate,
+        });
+
+        if(!canSend) continue;
+
+        // cut
+        if(goal === "cut" && diff >= 0) {
+            await createNotification({
+                userId: user._id,
+                type: "system",
+                title: "Weight not dropping",
+                message: "Your weight is not decreasing. Consider lowering calories",
+                meta: { diff },
+            });
+        }
+
+        // bulk
+        if(goal === "bulk" && diff <= 0) {
+            await createNotification({
+                userId: user._id,
+                type: "system",
+                title: "Weight not increasing",
+                message: "Your weight is not increasing. Consider eating more calories.",
+                meta: { diff },
+            });
+        }
+
+        // maintain
+        if(goal === "maintain" && Math.abs(diff) > 1) {
+            await createNotification({
+                userId: user._id,
+                type: "system",
+                title: "Weight unstable",
+                message: "Your weight fluctuates too much. Adjust calories slightly",
+                meta: { diff },
+            });
+        }
+
+    }
+}
