@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { runProgressAnalytics, runHighRepsAnalysis, runRirAnalysis } from "../services/analytics.service";
+import { runProgressAnalytics, runHighRepsAnalysis, runRirAnalysis, runWeightAnalysis } from "../services/analytics.service.js";
 
 export const startAnalyticsJob = () => {
     cron.schedule("0 2 * * *", async () => {
@@ -9,6 +9,7 @@ export const startAnalyticsJob = () => {
             await runProgressAnalytics();
             await runHighRepsAnalysis();
             await runRirAnalysis();
+            await runWeightAnalysis();
         } catch(error) {
             console.error("Analytics job error", error);
         }

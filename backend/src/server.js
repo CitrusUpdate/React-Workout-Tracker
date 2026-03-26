@@ -9,6 +9,7 @@ import workoutRoutes from "./routes/workouts.route.js";
 import { connectDB } from "./lib/db.js";
 import { ENV } from "./lib/env.js";
 import notificationRoutes from "./routes/notifications.route.js";
+import userRoutes from "./routes/user.route.js";
 
 const __dirname = path.resolve();
 const PORT = ENV.PORT || 3000;
@@ -26,6 +27,9 @@ app.use("/api/workouts", workoutRoutes);
 
 // notifications
 app.use("/api/notifications", notificationRoutes);
+
+// user stats
+app.use("/api/users", userRoutes);
 
 // deployment
 if(ENV.NODE_ENV === "production") {
