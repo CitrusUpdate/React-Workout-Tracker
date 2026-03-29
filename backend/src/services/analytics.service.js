@@ -1,8 +1,6 @@
 import WorkoutSession from "../models/WorkoutSession.js";
 import { canSendNotification, createNotification } from "./notification.services.js";
 
-// TODO: Optimization of these algorithms
-
 /* 
     check progress:
     what does it mean when user is not progressing?
@@ -23,17 +21,17 @@ const WEEKS_MAP = {
     cut: 7,
 };
 
-export const runProgressAnalyticsForUser = async (user) => {
+export const runProgressAnalyticsForUser = async (user, now) => {
     const goal = user.profile?.goal || "maintain";
     const weeks = WEEKS_MAP[goal];
 
-    const sinceDate = new Date();
+    const sinceDate = new Date(now);
     sinceDate.setDate(sinceDate.getDate() - weeks * 7);
 
     const sessions = await WorkoutSession.find({
         owner: user._id,
         date: { $gte: sinceDate},
-    }).sort({ date: 1 });
+    }).sort({ date: 1 }).lean();
 
     if(!sessions.length) return;
 
@@ -57,6 +55,8 @@ export const runProgressAnalyticsForUser = async (user) => {
         });
     });
 
+    const noProgressExercises = [];
+
     for(const [exerciseName, sets] of exerciseMap.entries()) {
         if(sets.length < 2) continue;
 
@@ -67,30 +67,28 @@ export const runProgressAnalyticsForUser = async (user) => {
         const noRepsProgress = last.reps <= first.reps;
 
         if(noWeightProgress && noRepsProgress) {
-            // if no progress we suggest to lower weight 10%
-            const suggestionWeight = Math.round(last.weight * 0.9);
-
-            const canSend = await canSendNotification({
-                userId: user._id,
-                type: "progress",
-                exercise: exerciseName,
-                sinceDate,
-            });
-
-            if(!canSend) continue;
-
-            await createNotification({
-                userId: user._id,
-                type: "progress",
-                title: `No progress: ${exerciseName}`,
-                message: `You haven't made any progress in ${weeks}. Consider a deload (-10%)`,
-                meta: {
-                    exercise: exerciseName,
-                    currentWeight: last.weight,
-                    suggestedWeight: suggestionWeight,
-                },
-            });
+            noProgressExercises.push(exerciseName);    
         }
+    }
+
+    if(noProgressExercises.length) {
+        const canSend = await canSendNotification({
+            userId: user._id,
+            type: "progress",
+            sinceDate,
+        });
+
+        if(!canSend) return;
+
+        await createNotification({
+            userId: user._id,
+            type: "progress",
+            title: `No progress detected`,
+            message: `Exercises: ${noProgressExercises.join(", ")} Consider a deload (-10%) on these exercises`,
+            meta: {
+                exercises: noProgressExercises,
+            },
+        });
     }
 };
 
@@ -101,78 +99,77 @@ export const runProgressAnalyticsForUser = async (user) => {
         - weight is probably to light so its better to increase weight and lower reps
 */
 
-export const runRepsAnalysisForUser = async(user) => {
-    const sinceDate = new Date();
+export const runRepsAnalysisForUser = async(user, now) => {
+    const sinceDate = new Date(now);
     sinceDate.setDate(sinceDate.getDate() - 7);
 
     
     const sessions = await WorkoutSession.find({
         owner: user._id,
-    }).sort({ date: -1 }).limit(5);
+    }).sort({ date: -1 }).limit(5).lean();
+
+    const tooHigh = [];
+    const tooLow = [];
 
     for(const session of sessions) {
         for(const ex of session.exercises) {
-            let notified = false;
-
             for(const set of ex.sets) {
                 if(!set.completed) continue;
 
-                if(set.reps > 13 && !notified) {
-                    const newWeight = (set.weight || 0) + 2.5;
-
-                    const canSend = await canSendNotification({
-                        userId: user._id,
-                        type: "volume",
-                        exercise: ex.name,
-                        sinceDate,
-                    });
-
-                    if(!canSend) continue;
-
-                    await createNotification({
-                        userId: user._id,
-                        type: "volume",
-                        title: `Too many reps: ${ex.name}`,
-                        message: `You did ${set.reps} reps. Consider increasing weight (+2.5kg)`,
-                        meta: {
-                            exercise: ex.name,
-                            currentWeight: set.weight,
-                            suggestedWeight: newWeight,
-                        },
-                    });
-
-                    notified = true;
-                } else if(set.reps < 5 && !notified) {
-                    const newWeight = Math.max((set.weight || 0) - 2.5, 0);
-
-                    const canSend = await canSendNotification({
-                        userId: user._id,
-                        type: "volume",
-                        exercise: ex.name,
-                        sinceDate,
-                    });
-
-                    if(!canSend) continue;
-
-                    await createNotification({
-                        userId: user._id,
-                        type: "volume",
-                        title: `Too few reps: ${ex.name}`,
-                        message: `You did only ${set.reps} reps. Decrease weight (-2.5kg)`,
-                        meta: {
-                            exercise: ex.name,
-                            currentWeight: set.weight,
-                            suggestedWeight: newWeight,
-                        },
-                    });
-
-                    notified = true;
+                if(set.reps > 13) {
+                    tooHigh.push(ex.name);
+                    break;
+                } else if(set.reps < 4) {
+                    tooLow.push(ex.name);
                 }
             }
         }
     }
-};
 
+    // dedupe
+    const uniqueHigh = [...new Set(tooHigh)];
+    const uniqueLow = [...new Set(tooLow)];
+
+    if(uniqueHigh.length) {
+        const canSend = await canSendNotification({
+            userId: user._id,
+            type: "volume",
+            sinceDate,
+        });
+
+        if(canSend) {
+            await createNotification({
+                userId: user._id,
+                type: "volume",
+                title: "Too many reps",
+                message: `Exercises: ${uniqueHigh.join(", ")}. Consider increase weight`,
+                meta: {
+                    exercises: uniqueHigh,
+                }
+            });
+        }
+    }   
+    
+    if(uniqueLow.length) {
+         const canSend = await canSendNotification({
+            userId: user._id,
+            type: "volume",
+            sinceDate,
+        });
+
+        if(canSend) {
+            await createNotification({
+                userId: user._id,
+                type: "volume",
+                title: "Too few reps",
+                message: `Exercises: ${uniqueLow.join(", ")}. Consider decrease weight`,
+                meta: {
+                    exercises: uniqueLow,
+                }
+            });
+        } 
+    }
+}; 
 
 /*
     too far from muscle failure
@@ -182,21 +179,19 @@ export const runRepsAnalysisForUser = async(user) => {
         - he has a lot of repetitions, he should do closer to muscle failure for better progress
 */
 
-export const runRirAnalysisForUser = async(user) => {
-    const sinceDate = new Date();
+export const runRirAnalysisForUser = async(user, now) => {
+    const sinceDate = new Date(now);
     sinceDate.setDate(sinceDate.getDate() - 7); // last week
 
     const sessions = await WorkoutSession.find({
         owner: user._id,
         date: { $gte: sinceDate },
-    });
+    }).lean();
 
-    const notifiedExercises = new Set();
+    const highRirExercises = []; 
 
     for(const session of sessions) {
         for(const ex of session.exercises) {
-            if(notifiedExercises.has(ex.name)) continue;
-
             let highRirSets = 0;
             let totalSets = 0;
 
@@ -218,35 +213,37 @@ export const runRirAnalysisForUser = async(user) => {
 
             // if most of sets was to light
             if(ratio >= 0.6) {
-                const canSend = await canSendNotification({
-                    userId: user._id,
-                    type: "rir",
-                    exercise: ex.name,
-                    sinceDate,
-                });
-
-                if(!canSend) continue;
-
-                await createNotification({
-                    userId: user._id,
-                    type: "rir",
-                    title: `Too easy ${ex.name}`,
-                    message: `Most of your sets had high RIR (${highRirSets}/${totalSets}). Train closer to failure`,
-                    meta: {
-                        exercise: ex.name,
-                        highRirSets,
-                        totalSets,
-                    },
-                });
-
-                notifiedExercises.add(ex.name);
+                highRirExercises.push(ex.name);    
             }
         }
     }
+
+    // dedupe
+    const uniqueHighRirExercises = [...new Set(highRirExercises)];
+
+    if(uniqueHighRirExercises.length) {
+        const canSend = await canSendNotification({
+            userId: user._id,
+            type: "rir",
+            sinceDate,
+        });
+
+        if(!canSend) return;
+
+        await createNotification({
+            userId: user._id,
+            type: "rir",
+            title: `Training too easy`,
+            message: `Exercises: ${uniqueHighRirExercises.join(", ")}. Your sets had high RIR. Train closer to failure`,
+            meta: {
+                exercises: uniqueHighRirExercises,
+            },
+        });
+    }
 };
 
-export const runWeightAnalysisForUser = async(user) => {
-    const sinceDate = new Date();
+export const runWeightAnalysisForUser = async(user, now) => {
+    const sinceDate = new Date(now);
     sinceDate.setDate(sinceDate.getDate() - 7);
 
     const history = user.weightHistory;

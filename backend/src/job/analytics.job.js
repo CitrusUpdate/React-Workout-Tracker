@@ -8,17 +8,18 @@ export const startAnalyticsJob = () => {
         console.log("Running analytics job...");
 
         try {
-            const users = await User.find();
+            const now = new Date();
+
+            const users = await User.find().lean();
             for(const user of users) {
                 if(!isUserLocalHour(user, 2)) continue;
 
                 console.log(`Running analytics for ${user._id}`);
             
-
-                await runProgressAnalyticsForUser(user);
-                await runRepsAnalysisForUser(user);
-                await runRirAnalysisForUser(user);
-                await runWeightAnalysisForUser(user);
+                await runProgressAnalyticsForUser(user, now);
+                await runRepsAnalysisForUser(user, now);
+                await runRirAnalysisForUser(user, now);
+                await runWeightAnalysisForUser(user, now);    
             }
         } catch(error) {
             console.error("Analytics job error", error);
