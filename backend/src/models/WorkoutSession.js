@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const SetSchema = mongoose.Schema({
-    weight: { type: Number, required: true }, // kg
-    reps: { type: Number, required: true },
+    weight: { type: Number }, // kg
+    reps: { type: Number },
     rir: { type: Number, default: null }, 
     completed: { type: Boolean, default: false },
     notes: { type: String, default: "" },
