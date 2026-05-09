@@ -71,8 +71,16 @@ export const updatePlan = async (req, res) => {
 
         if(!plan) return res.status(404).json({ message: "Not found" });
         if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden"});
+        if(req.body.days && !Array.isArray(req.body.days)) return res.status(400).json({ message: "Days must be array" });
 
-        Object.assign(plan, req.body);
+        const allowedFields = ["name", "description", "type", "days"];
+        allowedFields.forEach(field => {
+            if(req.body[field] !== undefined) {
+                plan[field] = req.body[field];
+            }
+        })
+
+        // Object.assign(plan, req.body);
         await plan.save();
 
         res.json(plan);
