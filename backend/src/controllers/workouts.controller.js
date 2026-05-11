@@ -161,9 +161,16 @@ export const createWorkout = async(req, res) => {
     try {
         if(!Array.isArray(req.body.exercises)) return res.status(400).json({ message: "Invalid payload"});
 
+        const { exercises, notes, type, date, dayIndex, plan } = req.body;
+        
         const session = await WorkoutSession.create({
             owner: req.user._id,
-            ...req.body,
+            exercises,
+            notes,
+            type, 
+            date,
+            dayIndex,
+            plan
         });
 
         return res.status(201).json(session);
@@ -212,6 +219,15 @@ export const getSingleWorkout = async(req, res) => {
 export const updateSet = async(req, res) => {
     try {
         const { sessionID, exerciseIndex, setIndex } = req.params;
+        const { weight, reps, rir, completed, notes } = req.body;
+        const update = {};
+
+        if(weight !== undefined) update.weight = weight;
+        if(reps !== undefined) update.reps = reps;
+        if(rir !== undefined) update.rir = rir;
+        if(completed !== undefined) update.completed = completed;
+        if(notes !== undefined) update.notes = notes;
+
         const session = await WorkoutSession.findById(sessionID);
 
         if(!session) return res.status(404).json({ message: "Not found" });
@@ -222,7 +238,7 @@ export const updateSet = async(req, res) => {
         if(!set) return res.status(404).json({ message: "Set not found" });
 
         // update set and save
-        Object.assign(set, req.body);
+        Object.assign(set, update);
         session.markModified("exercises");
         await session.save();
 
