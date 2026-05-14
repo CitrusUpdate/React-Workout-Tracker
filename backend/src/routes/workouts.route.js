@@ -28,6 +28,12 @@ router.post("/plans/:id/days/:dayIndex/instantiate", protectRoute, arcjetProtect
 // create manual workout (without plan)
 router.post("/workouts", protectRoute, arcjetProtection(ajAuth), createWorkout);
 
+// export all sessions to PDF
+router.get("/workouts/export/all/pdf", protectRoute, /*arcjetProtection(ajAuth),*/ exportAllSessionsPdf);
+
+// export all sessions to CSV
+router.get("/workouts/export/all/csv", protectRoute, /*arcjetProtection(ajAuth),*/ exportAllSessionsCsv);
+
 // get paginated workouts (with plan)
 router.get("/workouts", protectRoute, arcjetProtection(ajAuth), getWorkouts);
 
@@ -38,24 +44,18 @@ router.get("/workouts/:id", protectRoute, arcjetProtection(ajAuth), getSingleWor
 router.patch("/workouts/:sessionID/exercises/:exerciseIndex/sets/:setIndex", protectRoute, arcjetProtection(ajAuth), updateSet);
 
 // export plan to CSV
-router.get("/plans/:id/export/csv", protectRoute, arcjetProtection(ajAuth), exportPlanCsv);
+router.get("/plans/:id/export/csv", protectRoute, /*arcjetProtection(ajAuth),*/ exportPlanCsv);
 
 // export workout to CSV
-router.get("/workouts/:id/export/csv", protectRoute, arcjetProtection(ajAuth), exportWorkoutCsv);
-
-// export all sessions to CSV
-router.get("/workouts/export/all/csv", protectRoute, arcjetProtection(ajAuth), exportAllSessionsCsv);
+router.get("/workouts/:id/export/csv", protectRoute, /*arcjetProtection(ajAuth),*/ exportWorkoutCsv);
 
 // export plan to PDF
-router.get("/plans/:id/export/pdf", protectRoute, arcjetProtection(ajAuth), exportPlanPdf);
+router.get("/plans/:id/export/pdf", protectRoute, /*arcjetProtection(ajAuth),*/ exportPlanPdf);
 
 // export workout to PDF
-router.get("/workouts/:id/export/pdf", protectRoute, arcjetProtection(ajAuth), exportWorkoutPdf);
-
-// export all sessions to PDF
-router.get("/workouts/export/all/pdf", protectRoute, arcjetProtection(ajAuth), exportAllSessionsPdf);
+router.get("/workouts/:id/export/pdf", protectRoute, /*arcjetProtection(ajAuth),*/ exportWorkoutPdf);
 
 // import plan (csv file)
-router.post("/plans/import/csv", protectRoute, arcjetProtection(ajAuth), upload.single("file"), importPlanCsv);
+router.post("/plans/import/csv", protectRoute, /*arcjetProtection(ajAuth),*/ upload.single("file"), importPlanCsv);
 
 export default router;

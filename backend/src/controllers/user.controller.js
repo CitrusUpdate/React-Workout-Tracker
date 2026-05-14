@@ -41,7 +41,16 @@ export const updateUserProfile = async(req, res) => {
         const { weight, height, age, gender, goal, experienceLevel, preferences } = req.body;
         const user = await User.findById(req.user._id);
 
+        const validGenders = ["male", "female"];
+        const validGoals = ["cut", "maintain", "bulk"];
+        const validLevels = ["beginner", "intermediate", "advanced"];
+
         if(!user) return res.status(404).json({ message: "User not found" });
+
+
+        if(gender && !validGenders.includes(gender)) return res.status(400).json({ message: "Invalid gender" });
+        if(goal && !validGoals.includes(goal))  return res.status(400).json({ message: "Invalid goal" });
+        if(experienceLevel && !validLevels.includes(experienceLevel))  return res.status(400).json({ message: "Invalid experience level" });
 
         if(weight) user.profile.weight = weight;
         if(height) user.profile.height = height;

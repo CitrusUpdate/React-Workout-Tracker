@@ -4,6 +4,13 @@ import WorkoutSession from "../models/WorkoutSession.js";
 import Papa from "papaparse";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { drawTable } from "../utils/pdfTable.js";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import path from "path";
+import fontkit from "@pdf-lib/fontkit";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const fontPath = path.join(__dirname, "../fonts/NotoSans-Regular.ttf");
 
 // round weight for real plates
 const roundToPlate = (kg, rounding = 2.5) => Math.round(kg / rounding) * rounding;
@@ -276,9 +283,10 @@ export const exportPlanCsv = async(req, res) => {
         });
 
         const csv = Papa.unparse(rows);
+        const encodedFilename = encodeURIComponent(`${plan.name}.csv`);
 
-        res.setHeader("Content-Type", "text/csv");
-        res.setHeader("Content-Disposition", `attachment; filename=${plan.name}.csv`);
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", `attachment; filename="export.csv"; filename*=UTF-8''${encodedFilename}`);
         res.send(csv);
     } catch(error) {
         console.error("exportPlanCsv", error);
@@ -364,7 +372,9 @@ export const exportPlanPdf = async(req, res) => {
         if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
         const pdfDoc = await PDFDocument.create();
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        pdfDoc.registerFontkit(fontkit);
+        const fontBytes = readFileSync(fontPath);
+        const font = await pdfDoc.embedFont(fontBytes);
 
         let page = pdfDoc.addPage();
 
@@ -408,9 +418,10 @@ export const exportPlanPdf = async(req, res) => {
         });
 
         const pdfBytes = await pdfDoc.save();
+        const encodedFilename = encodeURIComponent(`${plan.name}.pdf`);
 
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `attachment; filename=${plan.name}.pdf`);
+        res.setHeader("Content-Disposition", `attachment; filename="export.pdf"; filename*=UTF-8''${encodedFilename}`);
         res.send(Buffer.from(pdfBytes));
     } catch(error) {
         console.error("exportPlanPdf", error);
@@ -425,7 +436,9 @@ export const exportWorkoutPdf = async(req, res) => {
         if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
         const pdfDoc = await PDFDocument.create();
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        pdfDoc.registerFontkit(fontkit);
+        const fontBytes = readFileSync(fontPath);
+        const font = await pdfDoc.embedFont(fontBytes);
 
         let page = pdfDoc.addPage();
 
@@ -472,7 +485,7 @@ export const exportWorkoutPdf = async(req, res) => {
         const pdfBytes = await pdfDoc.save();
 
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", "attachment; filename=workout.pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="workout.pdf"; filename*=UTF-8''${encodeURIComponent("workout.pdf")}`);
         res.send(Buffer.from(pdfBytes));
     } catch(error) {
         console.error("exportWorkoutPdf", error);
@@ -487,7 +500,9 @@ export const exportAllSessionsPdf = async(req, res) => {
             .sort({ date: 1 });
 
         const pdfDoc = await PDFDocument.create();
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        pdfDoc.registerFontkit(fontkit);
+        const fontBytes = readFileSync(fontPath);
+        const font = await pdfDoc.embedFont(fontBytes);
 
         let page = pdfDoc.addPage();
 
@@ -508,7 +523,7 @@ export const exportAllSessionsPdf = async(req, res) => {
             session.exercises.forEach(ex => {
                 ex.sets.forEach((set, i) => {
                     rows.push([
-                        session.date,
+                        session.date.toISOString().split("T")[0],
                         ex.name,
                         i + 1,
                         set.weight,
