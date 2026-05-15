@@ -10,6 +10,7 @@ export const useAuthStore = create((set, get) => ({
     isCheckingAuth: null,
     isSigningUp: false,
     isLogginIn: false,
+    isUpdatingProfile: false,
 
     checkAuth: async () => {
         try {
@@ -61,6 +62,28 @@ export const useAuthStore = create((set, get) => ({
         } catch(error) {
             toast.error("Error logging out");
             console.error("Logout error", error);
+        }
+    },
+
+    updateProfile: async(data) => {
+        set({ isUpdatingProfile: true });
+
+        try {
+            const res = await axiosInstace.put("/users/profile", data);
+            set({ authUser: { ...get().authUser, ...res.data }});
+            toast.success("Profile updated");
+        } catch(error) {
+            toast.error(error.response?.data?.message || "Update error");
+        } finally {
+            set({ isUpdatingProfile: false });
+        }
+    },
+
+    updateTimezone: async(timezone) => {
+        try {
+            await axiosInstace.patch("/auth/timezone", { timezone });
+        } catch(error) {
+            console.error("Timezone update error", error);
         }
     }
 }));
