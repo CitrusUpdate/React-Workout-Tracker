@@ -21,7 +21,7 @@ export default function StepGoals({ data, onChange }) {
                     <label className='label-onboarding'>Experience level</label>
                         <div className='grid grid-cols-3 gap-3'>
                             { ['beginner', 'intermediate', 'advanced'].map(l => (
-                                <button key={l} type='button' onClick={() => onChange('goal', l)}
+                                <button key={l} type='button' onClick={() => onChange('experienceLevel', l)}
                                     className={`py-2.5 rounded-lg text-sm font-medium border transition capitalize hover:cursor-pointer
                                     ${data.experienceLevel === l
                                     ? 'bg-blue-600 border-blue-500 text-white'

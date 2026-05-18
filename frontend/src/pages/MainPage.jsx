@@ -1,6 +1,8 @@
 import { useAuthStore } from "../store/useAuthStore";
 import OnboardingModal from "../components/OnboardingModal";
 import Cookies from 'js-cookie';
+import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
 
 export default function MainPage() {
     const { logout, authUser } = useAuthStore();
@@ -9,6 +11,8 @@ export default function MainPage() {
     return (
         <div>
             { needsOnboarding && <OnboardingModal /> }
+            <Navbar />
+            <Sidebar />
 
             {/*logout button for tests*/}
             <button 
