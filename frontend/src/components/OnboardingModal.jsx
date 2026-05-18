@@ -4,6 +4,7 @@ import StepGoals from './onboarding/StepGoals';
 import StepMaxes from './onboarding/StepMaxes';
 import StepPersonal from './onboarding/StepPersonal';
 import StepPreferences, { DETECTED_TZ } from './onboarding/StepPreferences';
+import Cookies from 'js-cookie';
 
 const STEPS = ['Personal Info', 'Goals', 'Preferences', '1RM Maxes'];
 
