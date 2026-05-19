@@ -10,14 +10,18 @@ export default function Sidebar() {
 
     {/* for responsive design hide sidebar on medium devices on small show */}
     return (
-        <header className={`block md:hidden fixed right-0 inset-y-0 bg-slate-950 w-24 h-full shadow-md shadow-blue-500 z-50 transition-all duration-300  ${isOpen ? 'w-64' : 'w-16'}`}>
+        <header className={`block md:hidden fixed right-0 inset-y-0 bg-slate-950 h-full shadow-md shadow-blue-500 z-50 transition-all duration-300  ${isOpen ? 'w-64' : 'w-16'}`}>
             <nav className="flex flex-col items-center justify-between h-full text-xl">
                 <button 
                     onClick={() => setIsOpen(!isOpen)}
-                    className="text-white hover:text-blue-500 transition self-end cursor-pointer"
+                    className="text-white hover:text-blue-500 transition self-end p-4 cursor-pointer"
                 >
                     { isOpen ? <PanelRightClose size={28} /> : <PanelRightOpen size={28} /> }
                 </button>
+
+                <div className={`flex-1 flex justify-end mt-4 ${isOpen ? 'hidden' : 'block'}`}>
+                            <Link to={"/profile"} onClick={() => setIsOpen(false)}><img className="w-10 h-10 rounded-full object-cover" src={avatarSrc} alt="User avatar" /></Link>
+                </div>
 
                 {/*show only if sidebar is open*/}
                 { isOpen && (
