@@ -8,3 +8,7 @@
 .label-onboarding {
     @apply block text-slate-400 text-sm mb-1.5;
 }
+
+.card {
+    @apply bg-slate-900 p-6 rounded-2xl shadow-sm shadow-blue-500 border border-slate-800 text-white
+}
