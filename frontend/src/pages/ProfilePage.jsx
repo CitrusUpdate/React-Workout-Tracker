@@ -39,12 +39,6 @@ export default function ProfilePage() {
         return sessionDate >= startOfWeek;
     }) || [];
 
-    // const completedSessions = thisWeekSessions.filter(session => {
-    //     return session.exercises?.every(exercise =>
-    //         exercise.sets?.every(set => set.completed)
-    //     );
-    // }).length;
-
     const completedThisWeek = thisWeekSessions.filter(session => {
         return session.exercises?.every(exercise =>
             exercise.sets?.every(set => set.completed)
