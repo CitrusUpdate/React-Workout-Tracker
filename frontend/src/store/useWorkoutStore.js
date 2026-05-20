@@ -16,5 +16,15 @@ export const useWorkoutStore = create((set, get) => ({
         } finally {
             set({ isLoadingWorkouts: false });
         }
+    },
+
+    instantiateWorkout: async(planId, dayIndex ) => {
+        try {
+            const res = await axiosInstace.post(`/workouts/plans/${planId}/days/${dayIndex}/instantiate`);
+            return res.data._id;
+        } catch(error) {
+            console.error("Error in instantiateWorkout: ", error);
+            throw error;
+        }
     }
 }));

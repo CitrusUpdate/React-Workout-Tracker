@@ -7,6 +7,8 @@ import { useAuthStore } from "../store/useAuthStore";
 import { Settings } from 'lucide-react';
 import { Link } from "react-router";
 import WeeklyProgressCard from "../components/WeeklyProgressCard";
+import NextWorkout from "../components/NextWorkout";
+import PreviousWorkout from "../components/PreviousWorkout";
 
 export default function ProfilePage() {
     const { fetchWorkouts, workouts, isLoadingWorkouts } = useWorkoutStore();
@@ -37,11 +39,31 @@ export default function ProfilePage() {
         return sessionDate >= startOfWeek;
     }) || [];
 
-    const completedSessions = thisWeekSessions.filter(session => {
+    const completedThisWeek = thisWeekSessions.filter(session => {
         return session.exercises?.every(exercise =>
             exercise.sets?.every(set => set.completed)
         );
-    }).length;
+    });
+
+    const completedSessions = completedThisWeek.length;
+    const nextDayIndex = completedSessions;
+
+    const isWeekCompleted = totalSessionsInPlan > 0 && nextDayIndex >= totalSessionsInPlan;
+    const planNameNext = !isWeekCompleted ? plans?.[0]?.days[nextDayIndex]?.name : null;
+    const planId = plans?.[0]?._id;
+
+    const lastCompletedSession = workouts?.sessions?.find(session => {
+        if(!session.exercises || session.exercises.length === 0) return false;
+
+        return session.exercises.every(exercise => 
+            exercise?.sets.every(set => set.completed)
+        );
+    });
+
+    const previousSessionId = lastCompletedSession?._id || null;
+    const planNamePrev = lastCompletedSession && plans?.[0] 
+        ? plans[0].days[lastCompletedSession.dayIndex]?.name
+        : null;
 
     {/*TODO: Add to User model active plan and store it with current active plan id. Now we have only one plan but we should support multiple plans choice*/}
 
@@ -67,10 +89,10 @@ export default function ProfilePage() {
                                     completedSessions={completedSessions || 0}
                                 />
                             </div>
-                            <div className="card">Previous workout</div>
-                            <div className="card">Next workout</div>
-                            <div className="card">weight history</div>
                             <div className="card">bmi</div>
+                            <div className="card"><NextWorkout planId={planId} nextDayIndex={nextDayIndex}  planName={planNameNext} isWeekCompleted={isWeekCompleted}/></div>
+                            <div className="card">weight history</div>
+                            <div className="card"><PreviousWorkout sessionId={previousSessionId} planName={planNamePrev} /></div>
                             <div className="card">Recommended macros</div>
                         </div>
                     </div>
