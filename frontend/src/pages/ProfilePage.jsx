@@ -13,6 +13,7 @@ import PreviousWorkout from "../components/PreviousWorkout";
 import PageLoader from "../components/PageLoader";
 import BmiCard from "../components/BmiCard";
 import RecommendedMacros from "../components/RecommendedMacros";
+import WeightHistory from "../components/WeightHistory";
 
 export default function ProfilePage() {
     const { fetchWorkouts, workouts, isLoadingWorkouts } = useWorkoutStore();
@@ -84,6 +85,9 @@ export default function ProfilePage() {
     const { bmi, calories, macros } = userStats;
     const { protein, fat, carbs } = macros;
 
+    const userGoal = authUser.profile.goal;
+    const userWeightHistory = authUser.weightHistory;
+
         return (
             <div className="pt-24">
                 <Navbar />
@@ -108,7 +112,7 @@ export default function ProfilePage() {
                             </div>
                             <div className="card"><BmiCard bmi={bmi} /></div>
                             <div className="card"><NextWorkout planId={planId} nextDayIndex={nextDayIndex}  planName={planNameNext} isWeekCompleted={isWeekCompleted}/></div>
-                            <div className="card">weight history</div>
+                            <div className="card"><WeightHistory goal={userGoal} weightHistory={userWeightHistory} /></div>
                             <div className="card"><PreviousWorkout sessionId={previousSessionId} planName={planNamePrev} /></div>
                             <div className="card"><RecommendedMacros calories={calories} protein={protein} fat={fat} carbs={carbs} /></div>
                         </div>

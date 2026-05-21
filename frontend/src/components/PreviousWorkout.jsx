@@ -1,6 +1,7 @@
 import { useNavigate} from 'react-router';
 import toast from 'react-hot-toast';
 import { Link } from "react-router";
+import { ArrowRight } from 'lucide-react';
 
 export default function PreviousWorkout({ sessionId, planName }) {
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function PreviousWorkout({ sessionId, planName }) {
                         to="/trainings" 
                         className='inline-block mt-3 text-blue-400 hover:text-blue-300 text-sm font-semibold transition'
                     >
-                        Get to work! ➔
+                        Get to work! <ArrowRight size={20} className="inline-block"/>
                     </Link>
                 </div>
             ) : (
