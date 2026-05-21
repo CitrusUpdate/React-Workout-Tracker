@@ -11,7 +11,7 @@ export default function PreviousWorkout({ sessionId, planName }) {
     }
 
     return (
-        <div className='flex flex-col justify-center h-full'>
+        <div className='flex flex-col justify-between h-full'>
             <h2 className='text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2'>Previous workout</h2>
 
             { !sessionId  ? (

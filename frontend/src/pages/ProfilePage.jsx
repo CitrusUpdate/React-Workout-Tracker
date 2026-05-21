@@ -4,22 +4,36 @@ import Sidebar from "../components/Sidebar";
 import { useWorkoutStore } from "../store/useWorkoutStore";
 import { usePlanStore } from "../store/usePlanStore";
 import { useAuthStore } from "../store/useAuthStore";
+import { useUserStore } from "../store/useUserStore";
 import { Settings } from 'lucide-react';
 import { Link } from "react-router";
 import WeeklyProgressCard from "../components/WeeklyProgressCard";
 import NextWorkout from "../components/NextWorkout";
 import PreviousWorkout from "../components/PreviousWorkout";
+import PageLoader from "../components/PageLoader";
+import BmiCard from "../components/BmiCard";
+import RecommendedMacros from "../components/RecommendedMacros";
 
 export default function ProfilePage() {
     const { fetchWorkouts, workouts, isLoadingWorkouts } = useWorkoutStore();
     const { authUser } = useAuthStore();
-    const { loadPlans, plans } = usePlanStore();
+    const { loadPlans, plans, isLoadingPlans } = usePlanStore();
+    const { getStats, userStats, isLoadingStats } = useUserStore();
     const avatarSrc = authUser.profilePic || "/default.png";
 
     useEffect(() => {
         fetchWorkouts();
         loadPlans();
+        getStats();
     }, []);
+
+    if (isLoadingStats || isLoadingPlans || isLoadingWorkouts || !userStats || !workouts || !plans) {
+        return (
+            <div className="pt-24 flex justify-center">
+                <PageLoader />
+            </div>
+        );
+    }
 
     const now = new Date();
     const startOfWeek = new Date(now);
@@ -67,6 +81,9 @@ export default function ProfilePage() {
 
     {/*TODO: Add to User model active plan and store it with current active plan id. Now we have only one plan but we should support multiple plans choice*/}
 
+    const { bmi, calories, macros } = userStats;
+    const { protein, fat, carbs } = macros;
+
         return (
             <div className="pt-24">
                 <Navbar />
@@ -89,11 +106,11 @@ export default function ProfilePage() {
                                     completedSessions={completedSessions || 0}
                                 />
                             </div>
-                            <div className="card">bmi</div>
+                            <div className="card"><BmiCard bmi={bmi} /></div>
                             <div className="card"><NextWorkout planId={planId} nextDayIndex={nextDayIndex}  planName={planNameNext} isWeekCompleted={isWeekCompleted}/></div>
                             <div className="card">weight history</div>
                             <div className="card"><PreviousWorkout sessionId={previousSessionId} planName={planNamePrev} /></div>
-                            <div className="card">Recommended macros</div>
+                            <div className="card"><RecommendedMacros calories={calories} protein={protein} fat={fat} carbs={carbs} /></div>
                         </div>
                     </div>
                 </div>
