@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { ArrowRight } from "lucide-react";
 
 export default function RecommendedMacros({ calories, protein, fat, carbs }) {
     return (
@@ -19,7 +20,7 @@ export default function RecommendedMacros({ calories, protein, fat, carbs }) {
                 to="/settings" 
                 className="inline-block mt-4 text-blue-400 hover:text-blue-300 text-sm font-semibold transition"
             >
-                Change my goal ➔
+                Change my goal <ArrowRight size={20} className="inline-block"/>
             </Link>
         </div>
     );

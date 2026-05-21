@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { ArrowRight } from 'lucide-react';
 
 export default function WeeklyProgressCard({ workoutDays, completedSessions }) {
     const days = workoutDays || 0;
@@ -20,7 +21,7 @@ export default function WeeklyProgressCard({ workoutDays, completedSessions }) {
                         to="/trainings" 
                         className="inline-block mt-4 text-blue-400 hover:text-blue-300 text-sm font-semibold transition"
                     >
-                        Start today! ➔
+                        Start today! <ArrowRight size={20} className="inline-block"/>
                     </Link>
                 </div>
             )}
@@ -46,7 +47,7 @@ export default function WeeklyProgressCard({ workoutDays, completedSessions }) {
                         to="/trainings" 
                         className="inline-block mt-4 text-blue-400 hover:text-blue-300 text-sm font-semibold transition"
                     >
-                        Start next workout ➔
+                        Start next workout <ArrowRight size={20} className="inline-block"/>
                     </Link>
             </div>
             )}

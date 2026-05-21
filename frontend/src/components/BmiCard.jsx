@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { ArrowRight } from "lucide-react";
 
 export default function BmiCard({ bmi }) {
     if (!bmi) return null;
@@ -42,7 +43,7 @@ export default function BmiCard({ bmi }) {
                 to="/settings" 
                 className="inline-block mt-4 text-blue-400 hover:text-blue-300 text-sm font-semibold transition"
             >
-                {suggestion} ➔
+                {suggestion} <ArrowRight size={20} className="inline-block"/>
             </Link>
         </div>
     );

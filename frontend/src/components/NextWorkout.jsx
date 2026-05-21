@@ -10,7 +10,7 @@ export default function NextWorkout({ planId, nextDayIndex, planName, isWeekComp
     }
 
     return (
-        <div className='flex flex-col justify-center h-full'>
+        <div className='flex flex-col justify-between h-full'>
             <h2 className='text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2'>Next workout</h2>
 
             { isWeekCompleted  ? (
