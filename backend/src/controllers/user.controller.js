@@ -38,7 +38,7 @@ export const updateWeight = async(req, res) => {
 
 export const updateUserProfile = async(req, res) => {
     try {
-        const { weight, height, age, gender, goal, experienceLevel, preferences } = req.body;
+        const { weight, height, age, gender, goal, experienceLevel, preferences, maxes = {} } = req.body;
         const user = await User.findById(req.user._id);
 
         const validGenders = ["male", "female"];
@@ -60,6 +60,17 @@ export const updateUserProfile = async(req, res) => {
 
         if(experienceLevel) user.experienceLevel = experienceLevel;
         if(preferences) user.preferences  = { ...user.preferences, ...preferences };
+        if(maxes) {
+            if (!user.profile.maxes) {
+                user.profile.maxes = new Map();
+            } else {
+                user.profile.maxes.clear();
+            }
+            
+            Object.entries(maxes).forEach(( [exercise, value ] ) => {
+                user.profile.maxes.set(exercise, Number(value));
+            })
+        }
 
         await user.save();
 
