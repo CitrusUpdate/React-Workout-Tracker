@@ -14,6 +14,7 @@ import PageLoader from "../components/PageLoader";
 import BmiCard from "../components/BmiCard";
 import RecommendedMacros from "../components/RecommendedMacros";
 import WeightHistory from "../components/WeightHistory";
+import PersonalInfo from "../components/PersonalInfo";
 
 export default function ProfilePage() {
     const { fetchWorkouts, workouts, isLoadingWorkouts } = useWorkoutStore();
@@ -104,17 +105,48 @@ export default function ProfilePage() {
                 <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gray-950">
                     <div className="w-full max-w-4xl">
                         <div className="grid md:grid-cols-2 grid-cols-1 gap-6">
+                            <div className="card md:col-span-2">
+                                <PersonalInfo profile={authUser.profile} />
+                            </div>
+
                             <div className="card">
                                 <WeeklyProgressCard
                                     workoutDays={totalSessionsInPlan || 0}
                                     completedSessions={completedSessions || 0}
                                 />
                             </div>
-                            <div className="card"><BmiCard bmi={bmi} /></div>
-                            <div className="card"><NextWorkout planId={planId} nextDayIndex={nextDayIndex}  planName={planNameNext} isWeekCompleted={isWeekCompleted}/></div>
-                            <div className="card"><WeightHistory goal={userGoal} weightHistory={userWeightHistory} /></div>
-                            <div className="card"><PreviousWorkout sessionId={previousSessionId} planName={planNamePrev} /></div>
-                            <div className="card"><RecommendedMacros calories={calories} protein={protein} fat={fat} carbs={carbs} /></div>
+
+                            <div className="card">
+                                <BmiCard bmi={bmi} />
+                            </div>
+
+                            <div className="card">
+                                <NextWorkout 
+                                    planId={planId}
+                                    nextDayIndex={nextDayIndex}  
+                                    planName={planNameNext} 
+                                    isWeekCompleted={isWeekCompleted}/>
+                            </div>
+
+                            <div className="card">
+                                <WeightHistory 
+                                    goal={userGoal} 
+                                    weightHistory={userWeightHistory} />
+                            </div>
+
+                            <div className="card">
+                                <PreviousWorkout 
+                                    sessionId={previousSessionId} 
+                                    planName={planNamePrev} />
+                            </div>
+
+                            <div className="card">
+                                <RecommendedMacros 
+                                calories={calories} 
+                                protein={protein} 
+                                fat={fat} 
+                                carbs={carbs} />
+                            </div>
                         </div>
                     </div>
                 </div>
