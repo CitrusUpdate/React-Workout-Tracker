@@ -1,4 +1,4 @@
-import PageLoader from './PageLoader.jsx';
+import PageLoader from '../PageLoader.jsx';
 import { ArrowRight, Trophy } from 'lucide-react';
 import { Link } from 'react-router';
 

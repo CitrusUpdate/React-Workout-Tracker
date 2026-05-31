@@ -7,14 +7,16 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useUserStore } from "../store/useUserStore";
 import { Settings } from 'lucide-react';
 import { Link } from "react-router";
-import WeeklyProgressCard from "../components/WeeklyProgressCard";
-import NextWorkout from "../components/NextWorkout";
-import PreviousWorkout from "../components/PreviousWorkout";
+import { motion } from "motion/react";
+import WeeklyProgressCard from "../components/userProfile/WeeklyProgressCard";
+import NextWorkout from "../components/userProfile/NextWorkout";
+import PreviousWorkout from "../components/userProfile/PreviousWorkout";
 import PageLoader from "../components/PageLoader";
-import BmiCard from "../components/BmiCard";
-import RecommendedMacros from "../components/RecommendedMacros";
-import WeightHistory from "../components/WeightHistory";
-import PersonalInfo from "../components/PersonalInfo";
+import BmiCard from "../components/userProfile/BmiCard";
+import RecommendedMacros from "../components/userProfile/RecommendedMacros";
+import WeightHistory from "../components/userProfile/WeightHistory";
+import PersonalInfo from "../components/userProfile/PersonalInfo";
+import AnimatedCard from "../components/AnimateCard";
 
 export default function ProfilePage() {
     const { fetchWorkouts, workouts, isLoadingWorkouts } = useWorkoutStore();
@@ -94,62 +96,69 @@ export default function ProfilePage() {
                 <Navbar />
                 <Sidebar />
 
-                {/*profilePage header*/}
-                <div className="flex items-center gap-8 bg-slate-800 w-full h-24 p-4 rounded-lg">
-                    <img src={avatarSrc} alt="User avatar" className="md:w-12 md:h-12 w-10 h-10 rounded-full object-cover" />
-                    <p className="text-white font-bold md:text-xl text-lg">{authUser.fullName}</p>
-                    <Link to={"/settings"} className="ml-auto"><Settings size={36} /></Link>
-                </div>
+                <motion.div
+                   initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                >
 
-                {/*grid cards with info*/}
-                <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gray-950">
-                    <div className="w-full max-w-4xl">
-                        <div className="grid md:grid-cols-2 grid-cols-1 gap-6">
-                            <div className="card md:col-span-2">
-                                <PersonalInfo profile={authUser.profile} />
-                            </div>
+                    {/*profilePage header*/}
+                    <div className="flex items-center gap-8 bg-slate-800 w-full h-24 p-4 rounded-lg">
+                        <img src={avatarSrc} alt="User avatar" className="md:w-12 md:h-12 w-10 h-10 rounded-full object-cover" />
+                        <p className="text-white font-bold md:text-xl text-lg">{authUser.fullName}</p>
+                        <Link to={"/settings"} className="ml-auto"><Settings size={36} /></Link>
+                    </div>
 
-                            <div className="card">
-                                <WeeklyProgressCard
-                                    workoutDays={totalSessionsInPlan || 0}
-                                    completedSessions={completedSessions || 0}
-                                />
-                            </div>
+                    {/*grid cards with info*/}
+                    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gray-950">
+                        <div className="w-full max-w-4xl">
+                            <div className="grid md:grid-cols-2 grid-cols-1 gap-6">
+                                <AnimatedCard delay={0.0} className="card md:col-span-2">
+                                    <PersonalInfo profile={authUser.profile} />
+                                </AnimatedCard>
 
-                            <div className="card">
-                                <BmiCard bmi={bmi} />
-                            </div>
+                                <AnimatedCard delay={0.1}>
+                                    <WeeklyProgressCard
+                                        workoutDays={totalSessionsInPlan || 0}
+                                        completedSessions={completedSessions || 0}
+                                    />
+                                </AnimatedCard>
 
-                            <div className="card">
-                                <NextWorkout 
-                                    planId={planId}
-                                    nextDayIndex={nextDayIndex}  
-                                    planName={planNameNext} 
-                                    isWeekCompleted={isWeekCompleted}/>
-                            </div>
+                                <AnimatedCard delay={0.2}>
+                                    <BmiCard bmi={bmi} />
+                                </AnimatedCard>
 
-                            <div className="card">
-                                <WeightHistory 
-                                    goal={userGoal} 
-                                    weightHistory={userWeightHistory} />
-                            </div>
+                                <AnimatedCard delay={0.3}>
+                                    <NextWorkout 
+                                        planId={planId}
+                                        nextDayIndex={nextDayIndex}  
+                                        planName={planNameNext} 
+                                        isWeekCompleted={isWeekCompleted}/>
+                                </AnimatedCard>
 
-                            <div className="card">
-                                <PreviousWorkout 
-                                    sessionId={previousSessionId} 
-                                    planName={planNamePrev} />
-                            </div>
+                                <AnimatedCard delay={0.4}>
+                                    <WeightHistory 
+                                        goal={userGoal} 
+                                        weightHistory={userWeightHistory} />
+                                </AnimatedCard>
 
-                            <div className="card">
-                                <RecommendedMacros 
-                                calories={calories} 
-                                protein={protein} 
-                                fat={fat} 
-                                carbs={carbs} />
+                                <AnimatedCard delay={0.5}>
+                                    <PreviousWorkout 
+                                        sessionId={previousSessionId} 
+                                        planName={planNamePrev} />
+                                </AnimatedCard>
+
+                                <AnimatedCard delay={0.6}>
+                                    <RecommendedMacros 
+                                    calories={calories} 
+                                    protein={protein} 
+                                    fat={fat} 
+                                    carbs={carbs} />
+                                </AnimatedCard>
                             </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
             </div>
         );
 }
