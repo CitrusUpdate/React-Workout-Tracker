@@ -27,6 +27,24 @@ const computeWeightFromPercent = (user, exerciseName, percent) => {
     return roundToPlate((oneRM * percent) / 100, rounding);
 };
 
+// helper for building query
+const buildSessionQuery = (req) => {
+    const query = { owner: req.user._id };
+    const { from, to, type } = req.query;
+
+    if(from || to) {
+        query.date = {};
+        if(from) query.date.$gte = new Date(from);
+        if(to) query.date.$lte = new Date(to);
+    }
+
+    if(type && type !== "all") {
+        query.type = type;
+    }
+
+    return query;
+}
+
 export const createPlan = async (req, res) => {
     try {
         const { name, description, type = "strength", days = [] } = req.body;
@@ -306,11 +324,15 @@ export const exportWorkoutCsv = async(req, res) => {
             ex.sets.forEach((set, setIndex) => {
                 rows.push({
                     exercise: ex.name,
+                    type: session.type,
                     exerciseNotes: ex.notes || "",
                     sets: setIndex + 1,
                     weight: set.weight,
                     reps: set.reps,
                     rir: set.rir,
+                    distanceKm: set.distance || "",
+                    durationSec: set.duration || "",
+                    pace: set.pace || "",
                     completed: set.completed,
                     setNotes: set.notes || ""
                 });
@@ -330,7 +352,8 @@ export const exportWorkoutCsv = async(req, res) => {
 
 export const exportAllSessionsCsv = async(req, res) => {
     try {
-        const sessions = await WorkoutSession.find({ owner: req.user._id }).sort({ date: 1});
+        const query = buildSessionQuery(req);
+        const sessions = await WorkoutSession.find(query).sort({ date: 1});
 
         const rows = [];
 
@@ -339,6 +362,7 @@ export const exportAllSessionsCsv = async(req, res) => {
                 ex.sets.forEach((set, i) => {
                     rows.push({
                         date: session.date.toISOString().split("T")[0],
+                        type: session.type,
                         sessionNotes: session.notes || "",
                         exercise: ex.name,
                         exerciseNotes: ex.notes || "",
@@ -346,6 +370,9 @@ export const exportAllSessionsCsv = async(req, res) => {
                         weight: set.weight,
                         reps: set.reps,
                         rir: set.rir,
+                        distanceKm: set.distance || "",
+                        durationSec: set.duration || "",
+                        pace: set.pace || "",
                         completed: set.completed,
                         setNotes: set.notes || ""
                     });
@@ -456,6 +483,16 @@ export const exportWorkoutPdf = async(req, res) => {
 
         session.exercises.forEach(ex => {
             ex.sets.forEach((set, i) => {
+                let notes = set.notes || "";
+                if (session.type === "running") {
+                    const runStats = [];
+                    if (set.distance) runStats.push(`${set.distance}km`);
+                    if (set.pace) runStats.push(`Pace: ${set.pace}`);
+                    if (runStats.length > 0) {
+                        notes = runStats.join(" | ") + (notes ? ` - ${notes}` : "");
+                    }
+                }
+
                 rows.push([
                     ex.name,
                     i + 1,
@@ -463,7 +500,7 @@ export const exportWorkoutPdf = async(req, res) => {
                     set.reps,
                     set.rir,
                     set.completed ? "Yes" : "No",
-                    set.notes || ""
+                    notes
                 ]);
             });
         });
@@ -495,8 +532,9 @@ export const exportWorkoutPdf = async(req, res) => {
 
 export const exportAllSessionsPdf = async(req, res) => {
     try {
+        const query = buildSessionQuery(req);
         const sessions = await WorkoutSession
-            .find({ owner: req.user._id })
+            .find(query)
             .sort({ date: 1 });
 
         const pdfDoc = await PDFDocument.create();
@@ -508,6 +546,7 @@ export const exportAllSessionsPdf = async(req, res) => {
 
         const headers = [
             "Date",
+            "Type",
             "Exercise",
             "Set",
             "Weight",
@@ -518,19 +557,31 @@ export const exportAllSessionsPdf = async(req, res) => {
         ];
 
         const rows = [];
-
+        
         sessions.forEach(session => {
             session.exercises.forEach(ex => {
                 ex.sets.forEach((set, i) => {
+                    // in pdf format too much columns could destroy look of export so running stats will be in notes if we have running sessions in plan
+                    let notes = set.notes || "";
+                    if (session.type === "running") {
+                        const runStats = [];
+                        if (set.distance) runStats.push(`${set.distance}km`);
+                        if (set.pace) runStats.push(`Pace: ${set.pace}`);
+                        if (runStats.length > 0) {
+                            notes = runStats.join(" | ") + (notes ? ` - ${notes}` : "");
+                        }
+                    }
+
                     rows.push([
                         session.date.toISOString().split("T")[0],
+                        session.type || "-",
                         ex.name,
                         i + 1,
                         set.weight,
                         set.reps,
                         set.rir,
                         set.completed ? "Yes" : "No",
-                        set.notes || ""
+                        notes
                     ]);
                 })
                 
@@ -543,9 +594,9 @@ export const exportAllSessionsPdf = async(req, res) => {
             headers,
             rows,
             font,
-            title: "All workout sessions",
+            title: "Workout sessions report",
             meta: [
-                `Sessions ${sessions.length}`
+                `Sessions: ${sessions.length}`
             ]
         });
 
@@ -555,7 +606,7 @@ export const exportAllSessionsPdf = async(req, res) => {
         res.setHeader("Content-Disposition", "attachment; filename=workout.pdf");
         res.send(Buffer.from(pdfBytes));
     } catch(error) {
-        console.error("exportWorkoutPdf", error);
+        console.error("exportAllSessionsPdf", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }

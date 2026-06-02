@@ -70,6 +70,35 @@ const userSchema = new mongoose.Schema({
         }
     ],
 
+    // active plan system
+    activePlan: {
+        planId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "TrainingPlan",
+            default: null,
+        },
+        // number of weeks we are using this plan
+        currentWeek: {
+            type: Number,
+            default: 1,
+        },
+        // when we started this plan
+        startedAt: {
+            type: Date,
+            default: null,
+        },
+    },
+
+    // credentials to connect strava for running statistics etc.
+    stravaAuth: {
+        athleteId: { type: String, default: null },
+        accessToken: { type: String, default: null },
+        refreshToken: { type: String, default: null },
+        expiresAt: { type: Date, default: null },
+        // user scopes for reading activities
+        scopes: { type: String, default: null },
+    },
+
     timezone: {
         type: String,
         default: "UTC",
