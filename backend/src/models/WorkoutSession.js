@@ -1,9 +1,19 @@
 import mongoose from "mongoose";
 
 const SetSchema = mongoose.Schema({
+    // strength training
     weight: { type: Number }, // kg
     reps: { type: Number },
     rir: { type: Number, default: null }, 
+
+    // running
+    distance: { type: Number },
+    duration: { type: Number },
+    pace: { type: String },
+    avgHeartRate: { type: Number },
+    elevation: { type: Number },
+    stravaActivityId: { type: String },
+
     completed: { type: Boolean, default: false },
     notes: { type: String, default: "" },
 });

@@ -1,5 +1,6 @@
 import { calculateUserStats } from "../services/nutrition.services.js";
 import User from "../models/User.js";
+import TrainingPlan from "../models/TrainingPlan.js";
 
 export const getUserStats = async(req, res) => {
     try {
@@ -77,6 +78,57 @@ export const updateUserProfile = async(req, res) => {
         await res.json({ message: "User profile updated succesfully" , profile: user.profile });
     } catch(error) {
         console.error("updateUserProfile", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const setAsActive = async(req, res) => {
+    try {
+        const { planId } = req.body;
+
+        if(!planId) return res.status(400).json({ message: "Plan ID is required" });
+
+        const planExists = await TrainingPlan.findById(planId);
+        if(!planExists) {
+            return res.status(404).json({ message: "Training plan not found" });
+        }
+
+        const user = await User.findById(req.user._id);
+
+        user.activePlan = {
+            planId: planId,
+            currentWeek: 1,
+            startedAt: new Date()
+        };
+
+        await user.save();
+
+        res.status(200).json({ 
+            message: "Active plan updated succesfully" ,
+            activePlan: user.activePlan
+        });
+    } catch(error) {
+        console.error("SetAsActive", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const incrementPlanWeek = async(req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if(!user.activePlan || !user.activePlan.planId) {
+            return res.status(400).json({ message: "You don't have and active plan right now" });
+        }
+
+        user.activePlan.currentWeek += 1;
+        await user.save();
+        
+        res.status(200).json({ 
+            message: "Week incremented successfully", 
+            currentWeek: user.activePlan.currentWeek 
+        });
+    } catch(error) {
+        console.error("incrementPlanWeek", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
