@@ -2,11 +2,20 @@ import mongoose, { Mongoose } from "mongoose";
 
 const PlanExerciseSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    setsCount: { type: Number, required: true },
-    targetRir: { type: Number },
-    targetPercent1RM: { type: Number }, // one rep max eg. 80 means 80% of 1RM
     order: { type: Number, default: 0 },
     notes: { type: String, default: "" },
+
+    // strength training targets
+    setsCount: { type: Number },
+    targetRir: { type: Number },
+    targetPercent1RM: { type: Number }, // one rep max eg. 80 means 80% of 1RM
+    targetTempo: { type: String, default: null },
+    
+    // running training targets
+    distance: { type: Number },
+    duration: { type: Number },
+    targetPace: { type: Number },
+    targetBPM: { type: Number },
 });
 
 const PlanDaySchema = new mongoose.Schema({
@@ -32,7 +41,7 @@ const TrainingPlanSchema = new mongoose.Schema({
 TrainingPlanSchema.index({ owner: 1 });
 
 // auto detect plan type
-TrainingPlanSchema.pre('save', function(next) {
+TrainingPlanSchema.pre('save', function() {
     const plan = this;
     if(!plan.days || plan.days.length === 0) return next();
 
@@ -43,8 +52,6 @@ TrainingPlanSchema.pre('save', function(next) {
     } else if(dayTypes.size === 1) {
         plan.type = Array.from(dayTypes)[0];
     }
-
-    next();
 });
 
 export default mongoose.model("TrainingPlan", TrainingPlanSchema);

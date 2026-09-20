@@ -8,42 +8,14 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 import fontkit from "@pdf-lib/fontkit";
+import { buildSessionQuery } from "../utils/query.js";
+import { computeWeightFromPercent } from "../utils/weights.js";
+import { generateCsvForSessions, generatePdfForSessions } from "../utils/exports.js";
+import { parsePlanCsv } from "../utils/imports.js";
+import { formatSecondsToTime } from "../utils/time.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fontPath = path.join(__dirname, "../fonts/NotoSans-Regular.ttf");
-
-// round weight for real plates
-const roundToPlate = (kg, rounding = 2.5) => Math.round(kg / rounding) * rounding;
-
-// check if there is a percent for one rep max (1RM) then count percent from 1RM round it to gym plates
-const computeWeightFromPercent = (user, exerciseName, percent) => {
-    if(!percent) return null;
-
-    const oneRM = user.profile?.maxes?.get(exerciseName) ?? user.profile?.maxes?.get(exerciseName.toLowerCase()) ?? null;
-
-    if(!oneRM) return null;
-
-    const rounding = user.preferences?.rounding ?? 2.5;
-    return roundToPlate((oneRM * percent) / 100, rounding);
-};
-
-// helper for building query
-const buildSessionQuery = (req) => {
-    const query = { owner: req.user._id };
-    const { from, to, type } = req.query;
-
-    if(from || to) {
-        query.date = {};
-        if(from) query.date.$gte = new Date(from);
-        if(to) query.date.$lte = new Date(to);
-    }
-
-    if(type && type !== "all") {
-        query.type = type;
-    }
-
-    return query;
-}
 
 export const createPlan = async (req, res) => {
     try {
@@ -143,35 +115,55 @@ export const instantiatePlanDay = async (req, res) => {
         const day = plan.days?.[dayIndex];
         if(!day) return res.status(404).json({ message: "Plan day not found" });
 
+        const dayType = day.type || "strength";
         const user = await User.findById(req.user._id);
 
         // for every exercise in plan, create new exercise in session
-        const exercises = day.exercises.map((planExercise, exerciseIndex) => ({
+        const exercises = day.exercises.map((planExercise, exerciseIndex) => {
+            const setsCount = planExercise.setsCount || 1;
+
+            return {
             name: planExercise.name, // plan name
             order: planExercise.order ?? exerciseIndex, // if the user has set the order we take it, if not we take an array order
             notes: planExercise.notes,  // plan notes
             fromPlanExerciseIndex: exerciseIndex,   // reference to the exercise position in the original training plan
             // create sets: if setsCount is 4 then it creates 4 empty sets
-            sets: Array.from({ length: planExercise.setsCount }).map(() => ({
-                // if plan has %1RM and user has max in his profile, then we count weight automatically, if not user can enter it manually
-                weight: computeWeightFromPercent(
-                    user,
-                    planExercise.name,
-                    planExercise.targetPercent1RM
-                ),
-            // user completes it after set is done: 
-            reps: null,
-            rir: null,
-            completed: false,
-            })), 
-        }));
+            sets: Array.from({ length: setsCount }).map(() => {
+                const baseSet = {
+                    completed: false,
+                    notes: ""
+                };
+
+                if(dayType === "running") {
+                    return {
+                        ...baseSet,
+                        distance: planExercise.distance || null,
+                        duration: planExercise.duration || null
+                    };
+                } else {
+                    return {
+                        ...baseSet,
+                        // if plan has %1RM and user has max in his profile, then we count weight automatically, if not user can enter it manually
+                        weight: computeWeightFromPercent(
+                            user,
+                            planExercise.name,
+                            planExercise.targetPercent1RM
+                        ),
+                        // user completes it after set is done: 
+                        reps: null,
+                        rir: planExercise.targetRir || null
+                    };
+                }
+            }),
+        };
+        });
 
         // create session
         const session = await WorkoutSession.create({
             owner: req.user._id, // user who trains
             plan: plan._id, // plan id from where session become
             dayIndex: Number(dayIndex),
-            type: plan.type, // example: strength
+            type: dayType, // example: strength
             exercises // every exercise generated higher
         });
 
@@ -244,7 +236,7 @@ export const getSingleWorkout = async(req, res) => {
 export const updateSet = async(req, res) => {
     try {
         const { sessionID, exerciseIndex, setIndex } = req.params;
-        const { weight, reps, rir, completed, notes } = req.body;
+        const { weight, reps, rir, completed, notes, distance, duration, pace, avgHeartRate, splits } = req.body;
         const update = {};
 
         if(weight !== undefined) update.weight = weight;
@@ -252,6 +244,13 @@ export const updateSet = async(req, res) => {
         if(rir !== undefined) update.rir = rir;
         if(completed !== undefined) update.completed = completed;
         if(notes !== undefined) update.notes = notes;
+
+        if(distance !== undefined) update.distance = distance;
+        if(duration !== undefined) update.duration = duration;
+        if(pace !== undefined) update.pace = pace;
+        if(avgHeartRate !== undefined) update.avgHeartRate = avgHeartRate;
+
+        if(splits !== undefined) update.splits = splits;
 
         const session = await WorkoutSession.findById(sessionID);
 
@@ -284,28 +283,49 @@ export const exportPlanCsv = async(req, res) => {
         if(!plan) return res.status(404).json({ message: "Not found" });
         if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
-        const rows = [];
+        let finalCsv = `=== Training Plan ${plan.name} ===\n`;
+        if(plan.description) finalCsv += `Description: ${plan.description}\n`;
 
-        plan.days.forEach(day => {
+        plan.days.forEach((day, index) => {
+            const dayType = day.type || "strength";
+            if(index > 0) finalCsv += "\n\n";
+            finalCsv += `--- Day ${index + 1}: ${day.name} | Type: ${day.type.toUpperCase()} ---\n`;
+            
+            const rows = [];
             day.exercises.forEach((exercise, index) => {
-                rows.push({
-                    day: day.name,
-                    index: index + 1,
-                    name: exercise.name,
-                    sets: exercise.setsCount,
-                    targetRir: exercise.targetRir,
-                    targetPercent1RM: exercise.targetPercent1RM,
-                    notes: exercise.notes || ""
-                });
+                if(dayType  === "running") {
+                    rows.push({
+                        "Order": index+ 1,
+                        "Exercise": exercise.name,
+                        "Distance": exercise.distance || "N/A",
+                        "Duration": formatSecondsToTime(exercise.duration),
+                        "Target Pace": formatSecondsToTime(exercise.targetPace),
+                        "Target BPM": exercise.targetBPM || "N/A",
+                        "Notes": exercise.notes || "Not provided"
+                    });
+                } else {
+                    rows.push({
+                        "Order": index + 1,
+                        "Exercise": exercise.name,
+                        "Sets": exercise.setsCount || "N/A",
+                        "Target RIR": exercise.targetRir ?? "N/A",
+                        "%1RM": exercise.targetPercent1RM ? `${exercise.targetPercent1RM}%` : "N/A",
+                        "Target Tempo": exercise.targetTempo || "N/A",
+                        "Notes": exercise.notes || "Not provided"
+                    });
+                }
             });
+
+            if(rows.length > 0) {
+                finalCsv += Papa.unparse(rows) + "\n";
+            }
         });
 
-        const csv = Papa.unparse(rows);
         const encodedFilename = encodeURIComponent(`${plan.name}.csv`);
 
         res.setHeader("Content-Type", "text/csv; charset=utf-8");
         res.setHeader("Content-Disposition", `attachment; filename="export.csv"; filename*=UTF-8''${encodedFilename}`);
-        res.send(csv);
+        res.send("\uFEFF" + finalCsv);
     } catch(error) {
         console.error("exportPlanCsv", error);
         res.status(500).json({ message: "Internal server error" });
@@ -319,31 +339,11 @@ export const exportWorkoutCsv = async(req, res) => {
         if(!session) return res.status(404).json({ message: "Not found" });
         if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
-        const rows = [];
-        session.exercises.forEach(ex => {
-            ex.sets.forEach((set, setIndex) => {
-                rows.push({
-                    exercise: ex.name,
-                    type: session.type,
-                    exerciseNotes: ex.notes || "",
-                    sets: setIndex + 1,
-                    weight: set.weight,
-                    reps: set.reps,
-                    rir: set.rir,
-                    distanceKm: set.distance || "",
-                    durationSec: set.duration || "",
-                    pace: set.pace || "",
-                    completed: set.completed,
-                    setNotes: set.notes || ""
-                });
-            });
-        });
-
-        const csv = Papa.unparse(rows);
+        const csvString = generateCsvForSessions([session]);
 
         res.setHeader("Content-Type", "text/csv");
         res.setHeader("Content-Disposition", `attachment; filename=workout.csv`);
-        res.send(csv);
+        res.send(csvString);
     } catch(error) {
         console.error("exportWorkoutCsv", error);
         res.status(500).json({ message: "Internal server error" });
@@ -355,36 +355,11 @@ export const exportAllSessionsCsv = async(req, res) => {
         const query = buildSessionQuery(req);
         const sessions = await WorkoutSession.find(query).sort({ date: 1});
 
-        const rows = [];
-
-        sessions.forEach(session => {
-            session.exercises.forEach(ex => {
-                ex.sets.forEach((set, i) => {
-                    rows.push({
-                        date: session.date.toISOString().split("T")[0],
-                        type: session.type,
-                        sessionNotes: session.notes || "",
-                        exercise: ex.name,
-                        exerciseNotes: ex.notes || "",
-                        setNumber: i + 1,
-                        weight: set.weight,
-                        reps: set.reps,
-                        rir: set.rir,
-                        distanceKm: set.distance || "",
-                        durationSec: set.duration || "",
-                        pace: set.pace || "",
-                        completed: set.completed,
-                        setNotes: set.notes || ""
-                    });
-                });
-            });
-        });
-
-        const csv = Papa.unparse(rows);
+       const csvString = generateCsvForSessions(sessions);
 
         res.setHeader("Content-Type", "text/csv");
         res.setHeader("Content-Disposition", "attachment; filename=all-sessions.csv");
-        res.send(csv);
+        res.send(csvString);
     } catch(error) {
         console.error("exportAllSessionsCsv", error);
         res.status(500).json({ message: "Internal server error" });
@@ -403,45 +378,53 @@ export const exportPlanPdf = async(req, res) => {
         const fontBytes = readFileSync(fontPath);
         const font = await pdfDoc.embedFont(fontBytes);
 
-        let page = pdfDoc.addPage();
+        plan.days.forEach((day, index) => {
+            let page = pdfDoc.addPage();
+            const dayType = day.type || "strength";
 
-        const headers = [
-            "Day",
-            "#",
-            "Exercise",
-            "Sets",
-            "Target RIR",
-            "%1RM",
-            "Notes"
-        ];
+            let headers = [];
+            if(dayType === "running") {
+                headers = [" # ", "Exercise", "Dist.", "Dur.", "Pace", "BPM", "Notes"];
+            } else {
+                headers = [" # ", "Exercise", "Sets", "RIR", "%1RM", "Tempo", "Notes"];
+            }
 
-        const rows = [];
-
-        plan.days.forEach(day => {
+            const rows = [];
             day.exercises.forEach((ex, i) => {
-                rows.push([
-                    day.name,
-                    i + 1,
-                    ex.name,
-                    ex.setsCount,
-                    ex.targetRir,
-                    ex.targetPercent1RM,
-                    ex.notes || ""
-                ]);
+                if(dayType === "running") {
+                    rows.push([
+                        `${i + 1}`,
+                        ex.name,
+                        ex.distance ? `${ex.distance} km` : "N/A",
+                        ex.duration ? `${formatSecondsToTime(ex.duration)}` : "N/A",
+                        ex.targetPace ? `${formatSecondsToTime(ex.targetPace)}` : "N/A",
+                        ex.targetBPM ? `${ex.targetBPM}` : "N/A",
+                        ex.notes || "Not provided"
+                    ]);
+                } else {
+                    rows.push([
+                        `${i + 1}`,
+                        ex.name,
+                        ex.setsCount || "N/A",
+                        ex.targetRir ?? "N/A",
+                        ex.targetPercent1RM ? `${ex.targetPercent1RM}%` : "N/A",
+                        ex.targetTempo || "N/A",
+                        ex.notes || "Not provided"
+                    ]);
+                }
             });
-        });
 
-        page = drawTable({
-            pdfDoc,
-            page,
-            headers,
-            rows,
-            font,
-            title: `Training Plan: ${plan.name}`,
-            meta: [
-                `Type ${plan.type}`,
-                `Days: ${plan.days.length}`
-            ]
+            drawTable({
+                pdfDoc,
+                page,
+                headers,
+                rows,
+                font,
+                title: `Plan: ${plan.name} | Day: ${day.name} (${dayType.toUpperCase()})`,
+                meta: [
+                    `Description: ${plan.description || "-"}`,
+                ]
+            });
         });
 
         const pdfBytes = await pdfDoc.save();
@@ -462,68 +445,11 @@ export const exportWorkoutPdf = async(req, res) => {
         if(!session) return res.status(404).json({ message: "Not found" });
         if(session.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
-        const pdfDoc = await PDFDocument.create();
-        pdfDoc.registerFontkit(fontkit);
-        const fontBytes = readFileSync(fontPath);
-        const font = await pdfDoc.embedFont(fontBytes);
-
-        let page = pdfDoc.addPage();
-
-        const headers = [
-            "Exercise",
-            "Set",
-            "Weight",
-            "Reps",
-            "RIR",
-            "Completed",
-            "Notes"
-        ];
-
-        const rows = [];
-
-        session.exercises.forEach(ex => {
-            ex.sets.forEach((set, i) => {
-                let notes = set.notes || "";
-                if (session.type === "running") {
-                    const runStats = [];
-                    if (set.distance) runStats.push(`${set.distance}km`);
-                    if (set.pace) runStats.push(`Pace: ${set.pace}`);
-                    if (runStats.length > 0) {
-                        notes = runStats.join(" | ") + (notes ? ` - ${notes}` : "");
-                    }
-                }
-
-                rows.push([
-                    ex.name,
-                    i + 1,
-                    set.weight,
-                    set.reps,
-                    set.rir,
-                    set.completed ? "Yes" : "No",
-                    notes
-                ]);
-            });
-        });
-
-        page = drawTable({
-            pdfDoc,
-            page,
-            headers,
-            rows,
-            font,
-            title: `Workout ${session.date.toISOString().split("T")[0]}`,
-            meta: [
-                `Type: ${session.type}`,
-                `Exercises: ${session.exercises.length}`,
-                `Notes: ${session.notes || "-"}`
-            ]
-        });
-
-        const pdfBytes = await pdfDoc.save();
+        const pdfBuffer = await generatePdfForSessions([session]);
 
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename="workout.pdf"; filename*=UTF-8''${encodeURIComponent("workout.pdf")}`);
-        res.send(Buffer.from(pdfBytes));
+        res.send(pdfBuffer);
     } catch(error) {
         console.error("exportWorkoutPdf", error);
         res.status(500).json({ message: "Internal server error" });
@@ -537,74 +463,11 @@ export const exportAllSessionsPdf = async(req, res) => {
             .find(query)
             .sort({ date: 1 });
 
-        const pdfDoc = await PDFDocument.create();
-        pdfDoc.registerFontkit(fontkit);
-        const fontBytes = readFileSync(fontPath);
-        const font = await pdfDoc.embedFont(fontBytes);
-
-        let page = pdfDoc.addPage();
-
-        const headers = [
-            "Date",
-            "Type",
-            "Exercise",
-            "Set",
-            "Weight",
-            "Reps",
-            "RIR",
-            "Completed",
-            "Notes"
-        ];
-
-        const rows = [];
-        
-        sessions.forEach(session => {
-            session.exercises.forEach(ex => {
-                ex.sets.forEach((set, i) => {
-                    // in pdf format too much columns could destroy look of export so running stats will be in notes if we have running sessions in plan
-                    let notes = set.notes || "";
-                    if (session.type === "running") {
-                        const runStats = [];
-                        if (set.distance) runStats.push(`${set.distance}km`);
-                        if (set.pace) runStats.push(`Pace: ${set.pace}`);
-                        if (runStats.length > 0) {
-                            notes = runStats.join(" | ") + (notes ? ` - ${notes}` : "");
-                        }
-                    }
-
-                    rows.push([
-                        session.date.toISOString().split("T")[0],
-                        session.type || "-",
-                        ex.name,
-                        i + 1,
-                        set.weight,
-                        set.reps,
-                        set.rir,
-                        set.completed ? "Yes" : "No",
-                        notes
-                    ]);
-                })
-                
-            });
-        });
-
-        page = drawTable({
-            pdfDoc,
-            page,
-            headers,
-            rows,
-            font,
-            title: "Workout sessions report",
-            meta: [
-                `Sessions: ${sessions.length}`
-            ]
-        });
-
-        const pdfBytes = await pdfDoc.save();
+        const pdfBuffer = await generatePdfForSessions(sessions);
 
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", "attachment; filename=workout.pdf");
-        res.send(Buffer.from(pdfBytes));
+        res.send(pdfBuffer);
     } catch(error) {
         console.error("exportAllSessionsPdf", error);
         res.status(500).json({ message: "Internal server error" });
@@ -617,35 +480,11 @@ export const importPlanCsv = async(req, res) => {
 
         const csvString = req.file.buffer.toString();
 
-        const { data, errors } = Papa.parse(csvString, {
-            header: true,
-            skipEmptyLines: true,
-        });
+        const days = parsePlanCsv(csvString);
 
-        if(errors.length) return res.status(400).json({ message: "CSV parse error", errors });
-
-        const daysMap = new Map();
-        data.forEach(row => {
-            const dayName = row.day || "Day 1";
-            
-            if(!daysMap.has(dayName)) {
-                daysMap.set(dayName, {
-                    name: dayName,
-                    exercises: []
-                });
-            }
-
-            daysMap.get(dayName).exercises.push({
-                name: row.name,
-                order: daysMap.get(dayName).exercises.length,
-                setsCount: Number(row.sets) || 0,
-                targetRir: row.targetRir ? Number(row.targetRir) : null,
-                targetPercent1RM: row.targetPercent1RM ? Number(row.targetPercent1RM) : null,
-                notes: row.notes || ""
-            });
-        });
-
-        const days = Array.from(daysMap.values());
+        if(days.length === 0) {
+            return res.status(400).json({ message: "No valid training days found in CSV" });
+        }
 
         const plan = await TrainingPlan.create({
             name: req.body.name || "Imported Plan",

@@ -1,17 +1,25 @@
 import mongoose from "mongoose";
 
+const SplitSchema = mongoose.Schema({
+    kilometer: { type: Number },
+    pace: { type: String},
+    bpm: { type: Number }
+}, { _id: false });
+
 const SetSchema = mongoose.Schema({
     // strength training
     weight: { type: Number }, // kg
     reps: { type: Number },
     rir: { type: Number, default: null }, 
+    tempo: { type: String, default: null },
 
     // running
     distance: { type: Number },
-    duration: { type: Number },
-    pace: { type: String },
-    avgHeartRate: { type: Number },
-    elevation: { type: Number },
+    duration: { type: Number, default: null },
+    avgPace: { type: String, default: null },
+    avgHeartRate: { type: Number, default: null },
+    elevation: { type: Number, default: null },
+    splits: [SplitSchema],
     stravaActivityId: { type: String },
 
     completed: { type: Boolean, default: false },
