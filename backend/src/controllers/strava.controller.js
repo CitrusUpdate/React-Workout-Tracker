@@ -73,7 +73,7 @@ export const stravaDisconnect = async(req, res) => {
         user.stravaAuth = { athleteId: null, accessToken: null, refreshToken: null, expiresAt: null, scopes: null };
         await user.save();
 
-        return res.status(200).json({ message: "Strava disconnected successfully", user });
+        return res.status(200).json({ message: "Strava disconnected successfully", stravaAuth: user.stravaAuth });
     } catch(error) {
         console.error("stravaDisconnect", error);
         res.status(500).json({ message: "Internal server error" });
