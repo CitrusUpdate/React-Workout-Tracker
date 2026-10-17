@@ -11,6 +11,7 @@ import { ENV } from "./lib/env.js";
 import notificationRoutes from "./routes/notifications.route.js";
 import userRoutes from "./routes/user.route.js";
 import { startAnalyticsJob } from "./job/analytics.job.js";
+import stravaRoutes from "./routes/strava.route.js";
 
 const __dirname = path.resolve();
 const PORT = ENV.PORT || 3000;
@@ -23,7 +24,10 @@ app.use(express.json( { limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(cookieParser());
 
+// auth
 app.use("/api/auth", authRoutes);
+
+// workouts
 app.use("/api/workouts", workoutRoutes);
 
 // notifications
@@ -31,6 +35,9 @@ app.use("/api/notifications", notificationRoutes);
 
 // user stats
 app.use("/api/users", userRoutes);
+
+// strava
+app.use("/api/strava", stravaRoutes);
 
 // deployment
 if(ENV.NODE_ENV === "production") {
