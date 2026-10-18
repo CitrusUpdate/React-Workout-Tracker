@@ -1,9 +1,11 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
+import isoWeek from "dayjs/plugin/isoWeek.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(isoWeek);
 
 export const isUserLocalHour = (user, targetHour = 2) => {
     const now = dayjs().tz(user.timezone || "UTC");
@@ -44,4 +46,11 @@ export const formatTimeToSeconds = (timeStr) => {
     }
 
     return null;
+}
+
+export const epochWeekTime = () => {
+    const startOfWeekEpoch = dayjs().startOf('isoWeek').unix();
+    const endOfWeekEpoch = dayjs().endOf('isoWeek').unix();
+
+    return [ startOfWeekEpoch, endOfWeekEpoch ];
 }
