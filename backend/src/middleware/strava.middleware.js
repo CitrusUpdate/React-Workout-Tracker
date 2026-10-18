@@ -16,7 +16,7 @@ export const checkStravaToken = async(req, res, next) => {
         if(!isTokenExpired(expiresAt)) return next();
 
         const response = await fetch("https://www.strava.com/oauth/token", {
-            method: "post",
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ client_id: clientID, client_secret: clientSecret, grant_type: grantType, refresh_token: refreshToken })
         });
