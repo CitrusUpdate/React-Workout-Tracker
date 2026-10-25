@@ -1,4 +1,4 @@
-import { use, useEffect } from "react";
+import { useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { useWorkoutStore } from "../store/useWorkoutStore";
@@ -17,10 +17,11 @@ import RecommendedMacros from "../components/userProfile/RecommendedMacros";
 import WeightHistory from "../components/userProfile/WeightHistory";
 import PersonalInfo from "../components/userProfile/PersonalInfo";
 import AnimatedCard from "../components/AnimateCard";
+import StravaCard from "../components/userProfile/StravaCard";
 
 export default function ProfilePage() {
     const { fetchWorkouts, workouts, isLoadingWorkouts } = useWorkoutStore();
-    const { authUser } = useAuthStore();
+    const { authUser, isCheckingAuth } = useAuthStore();
     const { loadPlans, plans, isLoadingPlans } = usePlanStore();
     const { getStats, userStats, isLoadingStats } = useUserStore();
     const avatarSrc = authUser.profilePic || "/default.png";
@@ -31,7 +32,7 @@ export default function ProfilePage() {
         getStats();
     }, []);
 
-    if (isLoadingStats || isLoadingPlans || isLoadingWorkouts || !userStats || !workouts || !plans) {
+    if (isLoadingStats || isLoadingPlans || isLoadingWorkouts || isCheckingAuth || !userStats || !workouts || !plans) {
         return (
             <div className="pt-24 flex justify-center">
                 <PageLoader />
@@ -100,35 +101,36 @@ export default function ProfilePage() {
                    initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
+                    className="pr-16 md:pr-0"
                 >
 
                     {/*profilePage header*/}
                     <div className="flex items-center gap-8 bg-slate-800 w-full h-24 p-4 rounded-lg">
                         <img src={avatarSrc} alt="User avatar" className="md:w-12 md:h-12 w-10 h-10 rounded-full object-cover" />
-                        <p className="text-white font-bold md:text-xl text-lg">{authUser.fullName}</p>
-                        <Link to={"/settings"} className="ml-auto"><Settings size={36} /></Link>
+                        <p className="text-white font-bold md:text-lg text-md">{authUser.fullName}</p>
+                        <Link to={"/settings"} className="ml-auto"><Settings  className="md:w-36" /></Link>
                     </div>
 
                     {/*grid cards with info*/}
-                    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gray-950">
+                    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gray-950 rounded-sm">
                         <div className="w-full max-w-4xl">
                             <div className="grid md:grid-cols-2 grid-cols-1 gap-6">
                                 <AnimatedCard delay={0.0} className="card md:col-span-2">
                                     <PersonalInfo profile={authUser.profile} />
                                 </AnimatedCard>
 
-                                <AnimatedCard delay={0.1}>
+                                <AnimatedCard delay={0.1} className="card">
                                     <WeeklyProgressCard
                                         workoutDays={totalSessionsInPlan || 0}
                                         completedSessions={completedSessions || 0}
                                     />
                                 </AnimatedCard>
 
-                                <AnimatedCard delay={0.2}>
+                                <AnimatedCard delay={0.2} className="card">
                                     <BmiCard bmi={bmi} />
                                 </AnimatedCard>
 
-                                <AnimatedCard delay={0.3}>
+                                <AnimatedCard delay={0.3} className="card">
                                     <NextWorkout 
                                         planId={planId}
                                         nextDayIndex={nextDayIndex}  
@@ -136,24 +138,28 @@ export default function ProfilePage() {
                                         isWeekCompleted={isWeekCompleted}/>
                                 </AnimatedCard>
 
-                                <AnimatedCard delay={0.4}>
+                                <AnimatedCard delay={0.4} className="card">
                                     <WeightHistory 
                                         goal={userGoal} 
                                         weightHistory={userWeightHistory} />
                                 </AnimatedCard>
 
-                                <AnimatedCard delay={0.5}>
+                                <AnimatedCard delay={0.5} className="card">
                                     <PreviousWorkout 
                                         sessionId={previousSessionId} 
                                         planName={planNamePrev} />
                                 </AnimatedCard>
 
-                                <AnimatedCard delay={0.6}>
+                                <AnimatedCard delay={0.6} className="card">
                                     <RecommendedMacros 
                                     calories={calories} 
                                     protein={protein} 
                                     fat={fat} 
                                     carbs={carbs} />
+                                </AnimatedCard>
+
+                                <AnimatedCard delay={0.7} className="stravaCard md:col-span-2">
+                                    <StravaCard />
                                 </AnimatedCard>
                             </div>
                         </div>
