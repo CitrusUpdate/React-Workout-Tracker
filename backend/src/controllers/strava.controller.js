@@ -11,7 +11,7 @@ export const getStravaAuthUrl = async (req, res) => {
         const redirectUri = ENV.STRAVA_REDIRECT_URI;
         const responseType = "code";
         const approvalPrompt  = "auto";
-        const scope = "activity:read_all";
+        const scope = "activity:read_all,profile:read_all";
         const state  = req.user._id.toString();
 
         const stravaAuthUri = `https://www.strava.com/oauth/authorize?client_id=${clientID}&redirect_uri=${redirectUri}&response_type=${responseType}&approval_prompt=${approvalPrompt}&scope=${scope}&state=${state}`;
@@ -181,6 +181,7 @@ export const getUserInfo = async(req, res) => {
         const responseData = await response.json();
 
         const userDetails = {
+            id: responseData.id,
             username: responseData.username || "Runner",
             firstname: responseData.firstname,
             lastname: responseData.lastname,
