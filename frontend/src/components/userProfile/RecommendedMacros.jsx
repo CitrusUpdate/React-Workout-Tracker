@@ -10,17 +10,17 @@ export default function RecommendedMacros({ calories, protein, fat, carbs }) {
             </div>
 
             <div className="mt-4">
-                <p className="md:text-3xl  font-bold">Calories: {calories} <span className="text-slate-500 text-sm">kcal</span></p>
-                <p className="md:text-2xl font-bold text-amber-400">Fat: {fat} <span className="text-slate-500 text-sm">g</span></p>
-                <p className="md:text-2xl font-bold text-rose-400">Protein: {protein} <span className="text-slate-500 text-sm">g</span></p>
-                <p className="md:text-2xl font-bold text-indigo-400">Carbs: {carbs} <span className="text-slate-500 text-sm">g</span></p>
+                <p className="text-xl md:text-2xl lg:text-3xl font-bold text-balance">Calories: {calories} <span className="text-slate-500 text-sm">kcal</span></p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold text-amber-400">Fat: {fat} <span className="text-slate-500 text-sm">g</span></p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold text-rose-400">Protein: {protein} <span className="text-slate-500 text-sm">g</span></p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold text-indigo-400">Carbs: {carbs} <span className="text-slate-500 text-sm">g</span></p>
             </div>
 
             <Link 
                 to="/settings" 
                 className="inline-block mt-4 text-blue-400 hover:text-blue-300 text-sm font-semibold transition"
             >
-                Change my goal <ArrowRight size={20} className="inline-block"/>
+                Change my goal <ArrowRight className="inline-block md:w-10 w-4"/>
             </Link>
         </div>
     );

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { axiosInstace } from "../lib/axios";
+import { axiosInstance } from "../lib/axios";
 
 export const usePlanStore = create((set, get) => ({
     plans: null,
@@ -8,7 +8,7 @@ export const usePlanStore = create((set, get) => ({
     loadPlans: async() => {
         try {
             set({ isLoadingPlans: true });
-            const res = await axiosInstace.get("/workouts/plans");
+            const res = await axiosInstance.get("/workouts/plans");
             set({ plans: res.data });
         } catch(error) {
             console.error("Error in loadPlans: ", error);

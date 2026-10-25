@@ -13,21 +13,21 @@ export default function PreviousWorkout({ sessionId, planName }) {
 
     return (
         <div className='flex flex-col justify-between h-full'>
-            <h2 className='text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2'>Previous workout</h2>
+            <h2 className='text-slate-400 md:text-sm text-xs font-semibold uppercase tracking-wider mb-2'>Previous workout</h2>
 
             { !sessionId  ? (
                 <div>
-                    <h3 className='text-xl font-bold text-red-400'>Not completed workout yet</h3>
+                    <h3 className='text-md md:text-lg lg:text-xl font-bold text-red-400'>Not completed workout yet</h3>
                     <Link 
                         to="/trainings" 
                         className='inline-block mt-3 text-blue-400 hover:text-blue-300 text-sm font-semibold transition'
                     >
-                        Get to work! <ArrowRight size={20} className="inline-block"/>
+                        Get to work! <ArrowRight className="inline-block md:w-10 w-4"/>
                     </Link>
                 </div>
             ) : (
                 <div>
-                    <h3 className='text-2xl font-bold text-white mb-4'>{ planName || "Loading..." }</h3>
+                    <h3 className='text-lg md:text-xl lg:text-2xl font-bold text-white mb-4'>{ planName || "Loading..." }</h3>
                     <button 
                             onClick={handleSummaryClick}
                             disabled={!sessionId}

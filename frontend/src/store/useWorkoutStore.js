@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { axiosInstace } from '../lib/axios';
+import { axiosInstance } from '../lib/axios';
 
 export const useWorkoutStore = create((set, get) => ({
     workouts: null,
@@ -9,7 +9,7 @@ export const useWorkoutStore = create((set, get) => ({
     fetchWorkouts: async() => {
         try {
             set({ isLoadingWorkouts: true });
-            const res = await axiosInstace.get("/workouts/workouts");
+            const res = await axiosInstance.get("/workouts/workouts");
             set({ workouts: res.data });
         } catch(error) {
             console.error("Error in fetchWorkouts: ", error);
@@ -21,7 +21,7 @@ export const useWorkoutStore = create((set, get) => ({
 
     instantiateWorkout: async(planId, dayIndex ) => {
         try {
-            const res = await axiosInstace.post(`/workouts/plans/${planId}/days/${dayIndex}/instantiate`);
+            const res = await axiosInstance.post(`/workouts/plans/${planId}/days/${dayIndex}/instantiate`);
             return res.data._id;
         } catch(error) {
             console.error("Error in instantiateWorkout: ", error);
@@ -33,7 +33,7 @@ export const useWorkoutStore = create((set, get) => ({
         try {
             set({ isExportingWorkout: true });
 
-            const res = await axiosInstace.get(`/workouts/workouts/export/all/${format}?from=${from}&to=${to}`, {
+            const res = await axiosInstance.get(`/workouts/workouts/export/all/${format}?from=${from}&to=${to}`, {
                 responseType: 'blob'
             });
 

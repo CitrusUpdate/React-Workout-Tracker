@@ -31,28 +31,28 @@ export default function WeeklyProgressCard({ workoutDays, completedSessions }) {
     return (
         <>
             <div className="flex flex-col justify-between h-full">
-                <h2 className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Weekly progress</h2>
+                <h2 className="text-slate-400 md:text-sm text-xs font-semibold uppercase tracking-wider mb-2">Weekly progress</h2>
 
                 <p>
-                    <span className="text-white text-4xl font-bold">{sessions} / </span> 
-                    <span className="text-white text-4xl font-bold">{days}</span>
+                    <span className="text-white text-lg md:text-xl lg:text-2xl font-bold">{sessions} / </span> 
+                    <span className="text-white text-lg md:text-xl lg:text-2xl font-bold">{days}</span>
                 </p>
 
                 {days === 0 && sessions === 0 && (
                     <div className="mt-4">
-                        <p className="text-white text-sm mt-2">No data from this week</p>
+                        <p className="text-white md:text-sm text-xs mt-2">No data from this week</p>
                         <Link 
                             to="/trainings" 
-                            className="inline-block mt-4 text-blue-400 hover:text-blue-300 text-sm font-semibold transition"
+                            className="inline-block mt-4 text-blue-400 hover:text-blue-300 md:text-sm text-xs font-semibold transition"
                         >
-                            Start today! <ArrowRight size={20} className="inline-block"/>
+                            Start today! <ArrowRight size={20}  className="inline-block md:w-10 w-4"/>
                         </Link>
                     </div>
                 )}
 
                 {days > 0 && days === sessions && (
                     <div className="mt-4">
-                        <p className="text-green-400 text-sm mt-2">
+                        <p className="text-green-400 md:text-sm text-xs mt-2">
                             Congratulations! You've completed all trainings this week 
                         </p>
                         <button 
@@ -66,14 +66,14 @@ export default function WeeklyProgressCard({ workoutDays, completedSessions }) {
 
                 {days > 0 && days !== sessions && (
                     <div className="mt-4">
-                        <p className="text-yellow-400 text-sm mt-2">
+                        <p className="text-yellow-400 md:text-sm text-xs mt-2">
                             Still have some trainings to do. Get to work! 
                         </p>
                         <Link 
                             to="/trainings" 
-                            className="inline-block mt-4 text-blue-400 hover:text-blue-300 text-sm font-semibold transition"
+                            className="inline-block mt-4 text-blue-400 hover:text-blue-300 md:text-sm text-xs font-semibold transition"
                         >
-                            Start next workout <ArrowRight size={20} className="inline-block"/>
+                            Start next workout <ArrowRight  className="inline-block md:w-10 w-4"/>
                         </Link>
                 </div>
                 )}
@@ -103,7 +103,7 @@ export default function WeeklyProgressCard({ workoutDays, completedSessions }) {
                                 <X size={20} />
                             </button>
 
-                            <h3 className="text-lg font-bold text-white mb-2">Export weekly data</h3>
+                            <h3 className="lg:text-lg md:text-md text-sm  font-bold text-white mb-2">Export weekly data</h3>
                             <p className="text-sm text-slate-400 mb-6">
                                 Choose the format to download your completed workouts from this week
                             </p>

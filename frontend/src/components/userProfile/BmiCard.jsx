@@ -29,11 +29,11 @@ export default function BmiCard({ bmi }) {
     return (
         <div className="flex flex-col justify-between h-full">
             <div>
-                <h2 className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">BMI</h2>
+                <h2 className="text-slate-400 md:text-md text-sm font-semibold uppercase tracking-wider mb-2">BMI</h2>
                 
                 <div className="flex items-baseline gap-3 mb-2">
-                    <h3 className="text-4xl font-bold text-white">{bmi}</h3>
-                    <span className={`text-lg font-medium ${colorClass}`}>{status}</span>
+                    <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-white">{bmi}</h3>
+                    <span className={`text-md md:text-lg lg:text-xl font-medium ${colorClass}`}>{status}</span>
                 </div>
 
                 <p className="text-slate-500 text-xs italic leading-relaxed">*BMI doesn't account for muscle mass. If you train hard, you might be heavier!</p>
@@ -41,9 +41,9 @@ export default function BmiCard({ bmi }) {
 
             <Link 
                 to="/settings" 
-                className="inline-block mt-4 text-blue-400 hover:text-blue-300 text-sm font-semibold transition"
+                className="inline-block mt-4 text-blue-400 hover:text-blue-300 md:text-sm text-xs font-semibold transition"
             >
-                {suggestion} <ArrowRight size={20} className="inline-block"/>
+                {suggestion} <ArrowRight size={20}  className="inline-block md:w-10 w-4"/>
             </Link>
         </div>
     );

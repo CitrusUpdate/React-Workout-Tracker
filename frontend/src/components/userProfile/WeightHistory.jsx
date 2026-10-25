@@ -5,7 +5,7 @@ export default function WeightHistory({ goal, weightHistory }) {
         return (
             <div className="flex flex-col justify-between h-full">
                 <div>
-                    <h2 className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Weight History</h2>
+                    <h2 className="text-slate-400 md:text-sm text-xs font-semibold uppercase tracking-wider mb-2">Weight History</h2>
                     <p className="text-slate-500 text-xs italic leading-relaxed">*Compared to your first recorded weight</p>
                 </div>
                 <div className="mt-4">
@@ -40,19 +40,19 @@ export default function WeightHistory({ goal, weightHistory }) {
     return (
         <div className='flex flex-col justify-between h-full'>
             <div>
-                <h2 className='text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2'>Weight history</h2>
+                <h2 className='text-slate-400 md:text-sm text-xs font-semibold uppercase tracking-wider mb-2'>Weight history</h2>
                 <p className='text-slate-500 text-xs italic leading-relaxed'>*Compared to your first recorded weight</p>
             </div>
 
             <div className='mt-4 flex items-end justify-between'>
                 <div>
-                    <p className='text-3xl font-bold text-white'>{currentWeight}<span className='text-slate-500 text-sm'>kg</span></p>
-                    <p className='text-xl font-bold text-slate-400 mt-1'>Started at: {firstWeight}<span className='text-slate-500 text-sm'>kg</span></p>
+                    <p className='text-lg md:text-xl lg:text-2xl font-bold text-white'>{currentWeight}<span className='text-slate-500 text-sm'>kg</span></p>
+                    <p className='text-md md:text-lg lg:text-xl font-bold text-slate-400 mt-1'>Started at: {firstWeight}<span className='text-slate-500 text-sm'>kg</span></p>
                 </div>
 
-                <div className={`flex items-center gap-1 text-lg font-bold ${colorClass}`}>
+                <div className={`flex items-center gap-1 text-sm md:text-md lg:text-lg font-bold ${colorClass}`}>
                     {arrow}
-                    <span>{percentageDiff}</span>
+                    <span>{percentageDiff}%</span>
                 </div>
             </div>
         </div>
