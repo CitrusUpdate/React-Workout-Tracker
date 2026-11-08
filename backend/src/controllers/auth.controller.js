@@ -43,12 +43,7 @@ export const signup = async (req, res) => {
             const savedUser = await newUser.save();
             generateToken(savedUser._id, res);
 
-            res.status(201).json({
-                _id: newUser._id,
-                fullName: newUser.fullName,
-                email: newUser.email,
-                profilePic: newUser.profilePic,
-            });
+            res.status(201).json(savedUser);
 
             //send message using resend
             try {
@@ -92,12 +87,7 @@ export const login = async (req, res) => {
 
         generateToken(user._id, res);
 
-        res.status(200).json({
-            _id: user._id,
-            fullName: user.fullName,
-            email: user.email,
-            profilePic: user.profilePic,
-        });
+        res.status(200).json(user);
     } catch(error) {
         console.error("Error in login controller", error);
         return res.status(500).json({ message: "Internal server error" });
