@@ -106,6 +106,18 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+userSchema.set('toJSON', {
+    transform: function(doc, ret) {
+        delete ret.password;
+
+        ret.isStravaConnected = !!(ret.stravaAuth && ret.stravaAuth.accessToken);
+
+        delete ret.stravaAuth;
+
+        return ret;
+    }
+});
+
 const User = mongoose.model("User", userSchema);
 
 export default User;
