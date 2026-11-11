@@ -89,12 +89,25 @@ export const updatePlan = async (req, res) => {
 
 export const deletePlan = async (req, res) => {
     try {
-        const plan = await TrainingPlan.findById(req.params.id);
+        const { id } = req.params;
+        const plan = await TrainingPlan.findById(id);
+        const user = await User.findById(req.user._id);
 
         if(!plan) return res.status(404).json({ message: "Not found" });
         if(plan.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: "Forbidden" });
 
         await plan.deleteOne();
+
+        // check if user deleted his active plan
+        if(user?.activePlan?.planId?.toString() === id) {
+            user.activePlan = {
+                planId: null,
+                currentWeek: 1,
+                startedAt: null
+            };
+
+            await user.save();
+        }
         res.json({ message: "Deleted" });
     } catch(error) {
         console.error("deletePlan", error);
