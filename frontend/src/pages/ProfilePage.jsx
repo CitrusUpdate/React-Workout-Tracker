@@ -47,8 +47,9 @@ export default function ProfilePage() {
     startOfWeek.setDate(now.getDate() + diff);
     startOfWeek.setHours(0, 0, 0, 0);
     
-
-    const totalSessionsInPlan = plans?.[0]?.days?.length || 0;
+    const planId = authUser?.activePlan?.planId;
+    const currentPlan = plans?.find(p => p._id === planId) || null;
+    const totalSessionsInPlan = currentPlan?.days?.length || 0;
 
     const thisWeekSessions = workouts?.sessions?.filter(session => {
         const sessionDate = new Date(session.date);
@@ -68,8 +69,7 @@ export default function ProfilePage() {
     const nextDayIndex = completedSessions;
 
     const isWeekCompleted = totalSessionsInPlan > 0 && nextDayIndex >= totalSessionsInPlan;
-    const planNameNext = !isWeekCompleted ? plans?.[0]?.days[nextDayIndex]?.name : null;
-    const planId = plans?.[0]?._id;
+    const planNameNext = !isWeekCompleted ? currentPlan?.days[nextDayIndex]?.name : null;
 
     const lastCompletedSession = workouts?.sessions?.find(session => {
         if(!session.exercises || session.exercises.length === 0) return false;
@@ -80,8 +80,8 @@ export default function ProfilePage() {
     });
 
     const previousSessionId = lastCompletedSession?._id || null;
-    const planNamePrev = lastCompletedSession && plans?.[0] 
-        ? plans[0].days[lastCompletedSession.dayIndex]?.name
+    const planNamePrev = lastCompletedSession && currentPlan 
+        ? currentPlan?.days[lastCompletedSession.dayIndex]?.name
         : null;
 
     const { bmi, calories, macros } = userStats;
@@ -121,6 +121,7 @@ export default function ProfilePage() {
                                     <WeeklyProgressCard
                                         workoutDays={totalSessionsInPlan || 0}
                                         completedSessions={completedSessions || 0}
+                                        planId={planId}
                                     />
                                 </AnimatedCard>
 
@@ -145,7 +146,8 @@ export default function ProfilePage() {
                                 <AnimatedCard delay={0.5} className="card">
                                     <PreviousWorkout 
                                         sessionId={previousSessionId} 
-                                        planName={planNamePrev} />
+                                        planName={planNamePrev} 
+                                        planId={planId} />
                                 </AnimatedCard>
 
                                 <AnimatedCard delay={0.6} className="card">

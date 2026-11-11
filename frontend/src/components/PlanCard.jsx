@@ -34,7 +34,7 @@ export default function PlanCard({ plan, index, userMaxes, activePlanID }) {
             className="bg-slate-800/40 border border-slate-700/50 rounded-lg overflow-hidden flex flex-col relative"
         >
             {isModalOpen && (
-                <DeletePlanModal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} planName={planName} planID={plan._id} />
+                <DeletePlanModal setIsModalOpen={setIsModalOpen} planName={planName} planID={plan._id} />
             )}
 
             { plan._id === activePlanID && (

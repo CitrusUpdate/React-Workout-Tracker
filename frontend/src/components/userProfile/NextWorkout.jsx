@@ -1,5 +1,6 @@
 import { useNavigate} from 'react-router';
 import toast from 'react-hot-toast';
+import NoActivePlan from '../NoActivePlan';
 
 export default function NextWorkout({ planId, nextDayIndex, planName, isWeekCompleted }) {
     const navigate = useNavigate();
@@ -9,10 +10,11 @@ export default function NextWorkout({ planId, nextDayIndex, planName, isWeekComp
         navigate(`/trainings/preview/${planId}/${nextDayIndex}`);     
     }
 
+    if(!planId) return <NoActivePlan />
+
     return (
         <div className='flex flex-col justify-between h-full'>
             <h2 className='text-slate-400 md:text-sm text-xs font-semibold uppercase tracking-wider mb-2'>Next workout</h2>
-
             { isWeekCompleted  ? (
                 <div>
                     <h3 className='text-md md:text-lg lg:text-xl font-bold text-green-400'>Everything complete!</h3>

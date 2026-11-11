@@ -2,14 +2,17 @@ import { useNavigate} from 'react-router';
 import toast from 'react-hot-toast';
 import { Link } from "react-router";
 import { ArrowRight } from 'lucide-react';
+import NoActivePlan from '../NoActivePlan';
 
-export default function PreviousWorkout({ sessionId, planName }) {
+export default function PreviousWorkout({ sessionId, planName, planId }) {
     const navigate = useNavigate();
     
     const handleSummaryClick = () => {
         if(!sessionId) return toast.error("No previous workout found");
         navigate(`/trainings/summary/${sessionId}`);     
     }
+
+    if(!planId) return <NoActivePlan />
 
     return (
         <div className='flex flex-col justify-between h-full'>

@@ -3,8 +3,9 @@ import { Link } from "react-router";
 import { ArrowRight, Download, FileText, Table, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useWorkoutStore } from "../../store/useWorkoutStore";
+import NoActivePlan from "../NoActivePlan";
 
-export default function WeeklyProgressCard({ workoutDays, completedSessions }) {
+export default function WeeklyProgressCard({ workoutDays, completedSessions, planId }) {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const { isExportingWorkout, exportWeeklyWorkouts } = useWorkoutStore(); 
 
@@ -27,6 +28,8 @@ export default function WeeklyProgressCard({ workoutDays, completedSessions }) {
 
         setIsExportModalOpen(false);
     }   
+
+    if(!planId) return <NoActivePlan />
 
     return (
         <>
