@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
 
-export function usePlanFilters(initialPlans = []) {
+export function usePlanFilters(initialPlans = [], activePlanID) {
     const [planType, setPlanType] = useState("all");
     const [planFrequency,  setPlanFrequency]  = useState("all");
 
     const filteredPlans = useMemo(() => {
         if(!initialPlans || initialPlans.length === 0) return [];
 
-        return initialPlans.filter(plan => {
+        const filtered = initialPlans.filter(plan => {
             let typeMatch = true;
             if(planType !== "all") {
                 typeMatch = plan.type === planType
@@ -28,7 +28,13 @@ export function usePlanFilters(initialPlans = []) {
 
             return typeMatch && frequencyMatch;
         });
-    }, [initialPlans, planType, planFrequency]);
+
+        return filtered.sort((a, b) => {
+            if (a._id === activePlanID) return -1;
+            if(b._id === activePlanID) return 1;
+            return 0;
+        });
+    }, [initialPlans, planType, planFrequency, activePlanID]); 
 
     const clearPlanFilters = () => {
         setPlanType("all");

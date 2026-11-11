@@ -24,7 +24,7 @@ export default function ProfilePage() {
     const { authUser, isCheckingAuth } = useAuthStore();
     const { loadPlans, plans, isLoadingPlans } = usePlanStore();
     const { getStats, userStats, isLoadingStats } = useUserStore();
-    const avatarSrc = authUser.profilePic || "/default.png";
+    const avatarSrc = authUser?.profilePic || "/default.png";
 
     useEffect(() => {
         fetchWorkouts();
@@ -32,7 +32,7 @@ export default function ProfilePage() {
         getStats();
     }, []);
 
-    if (isLoadingStats || isLoadingPlans || isLoadingWorkouts || isCheckingAuth || !userStats || !workouts || !plans) {
+    if (isLoadingStats || isLoadingPlans || isLoadingWorkouts || isCheckingAuth || !userStats || !workouts || !plans || !authUser) {
         return (
             <div className="pt-24 flex justify-center">
                 <PageLoader />
@@ -84,13 +84,11 @@ export default function ProfilePage() {
         ? plans[0].days[lastCompletedSession.dayIndex]?.name
         : null;
 
-    {/*TODO: Add to User model active plan and store it with current active plan id. Now we have only one plan but we should support multiple plans choice*/}
-
     const { bmi, calories, macros } = userStats;
     const { protein, fat, carbs } = macros;
 
-    const userGoal = authUser.profile.goal;
-    const userWeightHistory = authUser.weightHistory;
+    const userGoal = authUser?.profile?.goal;
+    const userWeightHistory = authUser?.weightHistory;
 
         return (
             <div className="pt-24">
@@ -107,7 +105,7 @@ export default function ProfilePage() {
                     {/*profilePage header*/}
                     <div className="flex items-center gap-8 bg-slate-800 w-full h-24 p-4 rounded-lg">
                         <img src={avatarSrc} alt="User avatar" className="md:w-12 md:h-12 w-10 h-10 rounded-full object-cover" />
-                        <p className="text-white font-bold md:text-lg text-md">{authUser.fullName}</p>
+                        <p className="text-white font-bold md:text-lg text-md">{authUser?.fullName}</p>
                         <Link to={"/settings"} className="ml-auto"><Settings  className="md:w-36" /></Link>
                     </div>
 
@@ -116,7 +114,7 @@ export default function ProfilePage() {
                         <div className="w-full max-w-4xl">
                             <div className="grid md:grid-cols-2 grid-cols-1 gap-6">
                                 <AnimatedCard delay={0.0} className="card md:col-span-2">
-                                    <PersonalInfo profile={authUser.profile} />
+                                    <PersonalInfo profile={authUser?.profile} />
                                 </AnimatedCard>
 
                                 <AnimatedCard delay={0.1} className="card">

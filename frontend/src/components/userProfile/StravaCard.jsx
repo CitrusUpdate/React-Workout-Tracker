@@ -8,7 +8,7 @@ export default function StravaCard() {
     const { isFetchingStravaDetails, connectStrava, disconnectStrava, stravaUserDetails, stravaUserStats, getUserInfo, getUserStats, getRuns, stravaRuns } = useStravaStore();
     const { authUser } = useAuthStore();
 
-    const isStravaConnected = !!authUser?.stravaAuth?.accessToken;
+    const isStravaConnected = authUser?.isStravaConnected;
 
     useEffect(() => {
         if(isStravaConnected) {

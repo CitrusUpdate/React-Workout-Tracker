@@ -14,9 +14,13 @@
 }
 
 .card {
-    @apply bg-slate-900 p-6 rounded-2xl shadow-sm shadow-blue-500 border border-slate-800 text-white
+    @apply bg-slate-900 p-6 rounded-2xl shadow-sm shadow-blue-500 border border-slate-800 text-white;
 }
 
 .stravaCard {
-    @apply bg-slate-900 p-6 rounded-2xl shadow-sm shadow-strava border text-white
+    @apply bg-slate-900 p-6 rounded-2xl shadow-sm shadow-strava border text-white;
+}
+
+.activePlan {
+    @apply absolute top-7 -right-12 w-48 rotate-45 bg-blue-600 text-center text-xs font-bold py-1.5 text-white shadow-lg shadow-blue-500/50 uppercase tracking-wider z-10;
 }

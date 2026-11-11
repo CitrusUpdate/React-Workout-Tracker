@@ -17,6 +17,7 @@ export default function NextWorkout({ planId, nextDayIndex, planName, isWeekComp
                 <div>
                     <h3 className='text-md md:text-lg lg:text-xl font-bold text-green-400'>Everything complete!</h3>
                     <p className='text-slate-300 text-sm mt-1'>Rest for now, wait for next week</p>
+                    { /* TODO: Increment Plan Week when week is completed */}
                 </div>
             ) : (
                 <div>

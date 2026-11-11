@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { ChevronDown, Play, Edit } from 'lucide-react'
-import { Link } from 'react-router';
+import { ChevronDown, Play, Edit, X } from 'lucide-react'
 import { motion, AnimatePresence } from "motion/react";
+import { usePlanStore } from '../store/usePlanStore';
+import DeletePlanModal from './DeletePlanModal';
 
-export default function PlanCard({ plan, index, userMaxes }) {
+export default function PlanCard({ plan, index, userMaxes, activePlanID }) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const { setAsActive } = usePlanStore();
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const planDays = plan.days;
     const trainingDays = planDays.length || 0;
@@ -28,8 +31,18 @@ export default function PlanCard({ plan, index, userMaxes }) {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
-            className="bg-slate-800/40 border border-slate-700/50 rounded-lg overflow-hidden flex flex-col"
+            className="bg-slate-800/40 border border-slate-700/50 rounded-lg overflow-hidden flex flex-col relative"
         >
+            {isModalOpen && (
+                <DeletePlanModal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} planName={planName} planID={plan._id} />
+            )}
+
+            { plan._id === activePlanID && (
+                <div className="activePlan">
+                    Active Plan
+                </div>
+            )}
+
             <div 
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center justify-between hover:bg-slate-800/60 transition p-4 cursor-pointer group"
@@ -42,7 +55,7 @@ export default function PlanCard({ plan, index, userMaxes }) {
                     </p>
                 </div>
 
-                <div className={`p-2 rounded-full bg-slate-700 text-slate-300 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                <div className={`p-2 rounded-full bg-slate-700 text-slate-300 transition-transform duration-300 md:mr-14 mr-7 ${isExpanded ? 'rotate-180' : ''}`}>
                     <ChevronDown size={20} />
                 </div>
             </div>
@@ -106,20 +119,31 @@ export default function PlanCard({ plan, index, userMaxes }) {
                                 ))}
                             </div>
 
-                            <div className="flex gap-3 mt-2">
-                                <button 
-                                    className="flex-1 flex justify-center items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md text-sm font-semibold transition cursor-pointer"
-                                    onClick={() => console.log("Edit plan", plan._id)}
-                                >
-                                    <Edit size={16} /> Edit Plan
-                                </button>
+                            <div className="flex justify-between items-center w-full mt-2">
+                                { /* TODO: implement edit plan functionality */ }
+                                <div className='flex gap-3 w-2/3'>
+                                    <button 
+                                        className="flex-1 flex justify-center items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md text-sm font-semibold transition cursor-pointer"
+                                        onClick={() => console.log("Edit plan", plan._id)}
+                                    >
+                                        <Edit size={16} /> Edit Plan
+                                    </button>
 
-                                <button 
-                                    className="flex-1 flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-md text-sm font-semibold transition cursor-pointer"
-                                    onClick={() => console.log("Set active:", plan._id)}
-                                >
-                                    <Play size={16} /> Set as Active
-                                </button>
+                                    <button 
+                                        className="flex-1 flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-md text-sm font-semibold transition cursor-pointer"
+                                        onClick={() => setAsActive(plan._id)}
+                                    >
+                                        <Play size={16} /> Set as Active
+                                    </button>
+                                </div>
+                                <div className='flex justify-between w-1/4'>
+                                    <button 
+                                        className="flex-1 flex justify-center items-center gap-2 bg-red-600 hover:bg-red-500 text-white py-2 px-8 rounded-md text-sm font-semibold transition cursor-pointer"
+                                        onClick={() => setIsModalOpen(true)}
+                                    >
+                                        <X size={16} /> Delete Plan
+                                    </button>
+                                </div>
                             </div>
 
                         </div>
