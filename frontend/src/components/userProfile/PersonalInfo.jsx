@@ -2,7 +2,7 @@ import PageLoader from '../PageLoader.jsx';
 import { ArrowRight, Trophy } from 'lucide-react';
 import { Link } from 'react-router';
 
-export default function PersonalInfo({ profile }) {
+export default function PersonalInfo({ profile = {} }) {
     const { age, weight, height, gender, goal, maxes = {} } = profile;
     const maxesArray = Object.entries(maxes);
 

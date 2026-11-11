@@ -17,9 +17,7 @@ export const useStravaStore = create((set, _) => ({
             window.location.href = res.data.stravaAuthUri;
         } catch(error) {
             console.error("Error in connectStrava: ", error);
-        } finally {
-        }
-
+        } 
     },
 
     // disconnect strava

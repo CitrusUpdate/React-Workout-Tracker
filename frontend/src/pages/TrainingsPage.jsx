@@ -4,7 +4,6 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import TrainingTabSwitch from "../components/TrainingTabSwitch";
 import WorkoutFilters from "../components/WorkoutFilters";
-import WorkoutCardSkeleton from "../components/WorkoutCardSkeleton";
 import { useWorkoutStore } from "../store/useWorkoutStore";
 import { usePlanStore } from "../store/usePlanStore";
 import { useAuthStore } from "../store/useAuthStore";
@@ -13,19 +12,23 @@ import { usePlanFilters } from "../hooks/usePlanFilters";
 import WorkoutCard from "../components/WorkoutCard";
 import PlanFilters from "../components/PlanFilters";
 import PlanCard from "../components/PlanCard";
+import WorkoutCardSkeleton from "../components/WorkoutCardSkeleton";
+import PlanCardSkeleton from "../components/PlanCardSkeleton";
 
 export default function TrainingsPage() {
     const[activeTab, setActiveTab] = useState("workouts");
 
-    const { plans, isLoadingPlans, loadPlans } = usePlanStore();
-    const { workouts, isLoadingWorkouts, fetchWorkouts } = useWorkoutStore();
+    const { plans, loadPlans, isLoadingPlans } = usePlanStore();
+    const { workouts, fetchWorkouts, isLoadingWorkouts } = useWorkoutStore();
     const { authUser } = useAuthStore();
     const userMaxes = authUser?.profile?.maxes || {};
+    const activePlanID = authUser?.activePlan?.planId
 
     useEffect(() => {
         loadPlans();
         fetchWorkouts();
     }, []);
+
 
     const rawWorkouts = workouts?.sessions || [];
     const {
@@ -39,7 +42,7 @@ export default function TrainingsPage() {
         planType, setPlanType,
         planFrequency, setPlanFrequency,
         filteredPlans, clearPlanFilters
-    } = usePlanFilters(rawPlans);
+    } = usePlanFilters(rawPlans, activePlanID);
 
     return (
         <div className="pt-24 min-h-screen bg-gray-950 flex flex-col md:flex-row">
@@ -86,7 +89,9 @@ export default function TrainingsPage() {
                     <div className="flex flex-col gap-4 mt-6">
                         { /*cards */ }
                         { activeTab === "workouts" && (
-                            filteredItems.length > 0 ? (
+                            isLoadingWorkouts ? (
+                                <WorkoutCardSkeleton />
+                            ) : filteredItems.length > 0 ? (
                                 filteredItems.map((workout, index) => (
                                     <WorkoutCard key={workout._id} workout={workout} index={index}/>
                                 ))
@@ -99,9 +104,11 @@ export default function TrainingsPage() {
                         )}
 
                         { activeTab === "plans" && (
-                            filteredPlans.length > 0 ? (
+                            isLoadingPlans ? (
+                                <PlanCardSkeleton />
+                            ) : filteredPlans.length > 0 ? (
                                 filteredPlans.map((plan, index) => (
-                                    <PlanCard key={plan._id} plan={plan} index={index} userMaxes={userMaxes}/>
+                                    <PlanCard key={plan._id} plan={plan} index={index} userMaxes={userMaxes} activePlanID={activePlanID}/>
                                 ))
                             ) : (
                                 <div className="text-center py-12 bg-slate-800/20 rounded-lg border border-dashed bordere-slate-700">

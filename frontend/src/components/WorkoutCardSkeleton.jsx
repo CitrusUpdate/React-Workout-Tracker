@@ -1,4 +1,4 @@
-export default function WorkouiCardSkeleton() {
+export default function WorkoutCardSkeleton() {
     return (
         <div className="space-y-3 w-full">
             { [1, 2, 3, 4].map((item) => (
