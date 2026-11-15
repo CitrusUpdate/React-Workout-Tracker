@@ -2,7 +2,7 @@ import CustomSelect from "../CustomSelect";
 import { dayTypeData } from "../../utils/typeData.js";
 import { useState } from "react";
 import ChangeDayTypeModal from "../ChangeDayTypeModal";
-import { changeDayTypeAndClear, deleteExerciseFromDay, getShouldHideWarning, handleExerciseChange, addExerciseToDay } from "../../utils/planUtils.js";
+import { changeDayTypeAndClear, deleteExerciseFromDay, getShouldHideWarning, handleExerciseChange, addExerciseToDay, deleteTrainingDay, dayNameChange } from "../../utils/planUtils.js";
 import { parsePaceToSeconds, formatSecondsToTime } from "../../utils/timeUtils.js";
 import CustomInput from "../CustomInput.jsx";
 import CustomTextarea from "../CustomTextarea.jsx";
@@ -11,7 +11,7 @@ import { CirclePlus, Trash } from "lucide-react";
 export default function RunningPlanEdit({ dayData, draftPlan, setDraftPlan }) {
     // TODO: Add training day functionality, drag and drop
 
-    
+
     if(!dayData || !draftPlan) return null;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,12 +55,36 @@ export default function RunningPlanEdit({ dayData, draftPlan, setDraftPlan }) {
             setDraftPlan(newDraft);
     }
     
+    const handleDeleteTrainingDay = () => {
+        const newDraft = deleteTrainingDay(draftPlan, dayData?.order);
+        setDraftPlan(newDraft);
+    }
+
+    const handleDayNameChange = (e) => {
+        const newDraft = dayNameChange(draftPlan, dayData?.order, e.target.value);
+        setDraftPlan(newDraft);
+    }
+
     return (
         <div className="w-full">
             { isModalOpen && (
                 <ChangeDayTypeModal setIsModalOpen={setIsModalOpen} dayData={dayData} onConfirm={handleConfirmDayChange}/>
             ) }
-            <h4 className="md:text-xl text-lg font-semibold text-white mb-2">{ dayData?.name }</h4>
+
+            <div className="flex justify-between items-center mb-2">
+                <CustomInput 
+                    labelFor={`dayName-${dayData?.order}`}
+                    name={`dayName-${dayData?.order}`}
+                    value={dayData?.name || ""}
+                    onChange={handleDayNameChange}
+                    placeholder="Your training day name"
+                    className="md:text-xl text-lg font-semibold text-white bg-transparent border-none outline-none focus:ring-0 p-0 m-0 placeholder-slate-500 w-full"
+                />
+                <Trash className="md:w-8 w-6 text-slate-500 hover:text-red-500 cursor-pointer transition-colors" 
+                    onClick={handleDeleteTrainingDay}
+                />
+            </div>
+
             <CustomSelect 
                 label="Type:"
                 labelFor={`dayType-${dayData?.order}`}
@@ -162,15 +186,21 @@ export default function RunningPlanEdit({ dayData, draftPlan, setDraftPlan }) {
                                     </tr>
                                 ))}
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colSpan={100}>
+                                        <button 
+                                            onClick={handleAddExercise}
+                                            className="mt-3 flex items-center justify-center gap-2 text-sm text-blue-400 hover:text-blue-300 font-semibold transition cursor-pointer w-full p-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg"
+                                        >
+                                            <CirclePlus className="md:w-8 w-6 cursor-pointer"/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
-
-                    <button 
-                        onClick={handleAddExercise}
-                        className="mt-3 flex items-center justify-center gap-2 text-sm text-blue-400 hover:text-blue-300 font-semibold transition cursor-pointer w-full p-3 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg"
-                    >
-                        <CirclePlus className="md:w-8 w-6 cursor-pointer"/>
-                    </button>
+                    
                 </div>
             
         </div>
