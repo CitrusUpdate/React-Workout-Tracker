@@ -3,6 +3,7 @@ import { ChevronDown, Play, Edit, X } from 'lucide-react'
 import { motion, AnimatePresence } from "motion/react";
 import { usePlanStore } from '../store/usePlanStore';
 import DeletePlanModal from './DeletePlanModal';
+import { useNavigate } from 'react-router';
 
 export default function PlanCard({ plan, index, userMaxes, activePlanID }) {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -25,6 +26,8 @@ export default function PlanCard({ plan, index, userMaxes, activePlanID }) {
         
         return (max * percent) / 100;
     };
+
+    const navigate = useNavigate();
 
     return (
         <motion.div
@@ -120,11 +123,10 @@ export default function PlanCard({ plan, index, userMaxes, activePlanID }) {
                             </div>
 
                             <div className="flex justify-between items-center w-full mt-2">
-                                { /* TODO: implement edit plan functionality */ }
                                 <div className='flex gap-3 w-2/3'>
                                     <button 
                                         className="flex-1 flex justify-center items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md text-sm font-semibold transition cursor-pointer"
-                                        onClick={() => console.log("Edit plan", plan._id)}
+                                        onClick={() => navigate(`/trainings/plans/edit/${plan._id}`)}
                                     >
                                         <Edit size={16} /> Edit Plan
                                     </button>

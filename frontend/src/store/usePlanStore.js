@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 export const usePlanStore = create((set, get) => ({
     plans: null,
     isLoadingPlans: false,
+    singlePlan: null,
+    isUpdatingPlan: false,
 
     loadPlans: async() => {
         try {
@@ -21,11 +23,12 @@ export const usePlanStore = create((set, get) => ({
 
     setAsActive: async(planID) => {
         try {
-            const res = await axiosInstance.put(`/users/active-plan`, { planId: planID });
+            await axiosInstance.put(`/users/active-plan`, { planId: planID });
             useAuthStore.getState().checkAuth();
             toast.success("Plan has been set as active");
         } catch(error) {
             console.error("Error in setAsActive: ", error);
+            toast.error(error.response?.data?.message || "Error while setting plan as active");
         }
     },
 
@@ -39,6 +42,40 @@ export const usePlanStore = create((set, get) => ({
             set((state) => ({ plans: state.plans .filter(p => p._id !== planID) }));
         } catch(error) {
             console.error("Error in deletePlan: ", error);
+            toast.error(error.response?.data?.message || "Error while deleting plan");
+        }
+    },
+
+    getSinglePlan: async(planID) => {
+        try {
+            set({ isLoadingPlans: true });
+            const res = await axiosInstance.get(`/workouts/plans/${planID}`);
+            set({ singlePlan: res.data });
+        } catch(error) {
+            console.error("Error in getSinglePlan: ", error);
+        } finally {
+            set({ isLoadingPlans: false });
+        }
+    },
+
+    updatePlan: async(planID, updatedData) => {
+        try {
+            set({ isUpdatingPlan: true });
+            const res = await axiosInstance.put(`/workouts/plans/${planID}`, updatedData);
+
+            // update our plan
+            set({ singlePlan: res.data });
+
+            // update this plan in all plans array so we can see change without refresh in TrainingsPage component
+            set((state) => ({
+                plans: state.plans ? state.plans.map(p => p._id === planID ? res.data : p) : null
+            })) ;
+            toast.success("Plan has been updated");
+        } catch(error) {
+            console.error("Error in updatePlan: ", error);
+            toast.error(error.response?.data?.message || "Error while updating plan");
+        } finally {
+            set({ isUpdatingPlan: false });
         }
     }
 }));
