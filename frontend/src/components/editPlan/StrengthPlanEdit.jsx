@@ -70,6 +70,7 @@ export default function StrengthPlanEdit({ dayData, draftPlan, setDraftPlan }) {
                                 <tr className="border-b border-slate-700/50 text-slate-400 text-xs uppercase tracking-wider">
                                     <th className="p-3 sticky left-0 z-10 bg-slate-800 border-r border-slate-700/50 shadow-[2px_0_5px_-2px_rgba(0, 0, 0, 0.3)] min-w-[200px]">Exercise</th>
                                     <th className="p-3 min-w-[100px]">Sets</th>
+                                    <th className="p-3 min-w-[100px]">Reps</th>
                                     <th className="p-3 min-w-[100px]">RIR</th>
                                     <th className="p-3 min-w-[120px]">%1 RM</th>
                                     <th className="p-3 min-w-[120px]">Tempo</th>
@@ -100,6 +101,17 @@ export default function StrengthPlanEdit({ dayData, draftPlan, setDraftPlan }) {
                                                 value={exercise?.setsCount || 3}
                                                 onChange={(e) => handleChange(e, index, 'setsCount')}
                                                 placeholder="e.g. 3"
+                                                required={true}
+                                            />
+                                        </td>
+
+                                        <td className="p-2">
+                                            <CustomInput
+                                                labelFor={`reps-${dayData?.order}-${index}`}
+                                                name={`reps-${dayData?.order}-${index}`}
+                                                value={exercise?.targetReps || 12}
+                                                onChange={(e) => handleChange(e, index, 'targetReps')}
+                                                placeholder="e.g. 8-12"
                                                 required={true}
                                             />
                                         </td>

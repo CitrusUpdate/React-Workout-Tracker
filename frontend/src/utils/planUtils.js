@@ -66,6 +66,7 @@ export const addExerciseToDay = (draftPlan, dayOrder, dayType) => {
                 newExercises = {
                     name: "",
                     setsCount: 3,
+                    targetReps: 10,
                     targetRir: "",
                     targetPercent1RM: "",
                     targetTempo: "",

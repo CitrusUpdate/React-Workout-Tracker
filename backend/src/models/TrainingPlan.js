@@ -7,6 +7,7 @@ const PlanExerciseSchema = new mongoose.Schema({
 
     // strength training targets
     setsCount: { type: Number },
+    targetReps: { type: String },
     targetRir: { type: Number },
     targetPercent1RM: { type: Number }, // one rep max eg. 80 means 80% of 1RM
     targetTempo: { type: String, default: null },
