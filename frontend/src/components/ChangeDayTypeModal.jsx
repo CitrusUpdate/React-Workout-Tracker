@@ -7,7 +7,7 @@ export default function ChangeDayTypeModal({ setIsModalOpen, dayData, onConfirm 
 
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-8">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md md:p-8 p-5 overflow-y-auto max-h-[90vh]">
                 <header className="mb-6 text-center font-bold">
                     <h2>Are you sure you want to change day type?</h2>
                     <p className="text-slate-400 md:text-xs text-sm uppercase tracking-widest mb-1">{dayData?.name} | {dayData?.type}</p>

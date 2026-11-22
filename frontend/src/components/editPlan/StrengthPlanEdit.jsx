@@ -109,7 +109,7 @@ export default function StrengthPlanEdit({ dayData, draftPlan, setDraftPlan }) {
                                         <CustomInput
                                             labelFor={`exerciseName-${dayData?.order}-${index}`}
                                             name={`exerciseName-${dayData?.order}-${index}`}
-                                            value={exercise?.name || `exercise ${index}`}
+                                            value={exercise?.name || ""}
                                             onChange={(e) => handleChange(e, index, 'name')}
                                             placeholder="Your exercise name"
                                             required={true}
