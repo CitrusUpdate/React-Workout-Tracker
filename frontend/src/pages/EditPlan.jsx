@@ -78,7 +78,7 @@ export default function EditPlan() {
             </button>
 
             <div className="w-full flex md:flex-row flex-col justify-between items-center gap-4">
-                <button onClick={handleSave} className="flex-1 flex items-center justify-center bg-blue-600 hover:bg-blue-500 w-32 py-2 rounded-md transition-colors duration-300 cursor-pointer">
+                <button onClick={handleSave} className="flex-1 flex items-center justify-center bg-blue-600 hover:bg-blue-500 w-32 py-2 rounded-md transition-colors duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={isUpdatingPlan}>
                     Save
                 </button>
 

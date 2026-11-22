@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 export const usePlanStore = create((set, get) => ({
     plans: null,
+    isCreatingPlan: false,
     isLoadingPlans: false,
     singlePlan: null,
     isUpdatingPlan: false,
@@ -55,6 +56,26 @@ export const usePlanStore = create((set, get) => ({
             console.error("Error in getSinglePlan: ", error);
         } finally {
             set({ isLoadingPlans: false });
+        }
+    },
+
+    createPlan: async(planData) => {
+        try {
+            set({ isCreatingPlan: true });
+            const res = await axiosInstance.post('/workouts/plans/', planData);
+
+            set((state) => ({
+                plans: state.plans ? [ res?.data, ...state.plans ] : [ res.data ]
+            }));
+
+            toast.success("Plan has been created");
+            return res?.data;
+        } catch(error) {
+            console.error("Error in createPlan: ", error);
+            toast.error(error.response?.data?.message || "Error while creating plan");
+            return null;
+        } finally {
+            set({ isCreatingPlan: false });
         }
     },
 

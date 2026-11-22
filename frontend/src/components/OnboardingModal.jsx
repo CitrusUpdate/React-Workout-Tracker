@@ -51,7 +51,7 @@ export default function OnboardingModal() {
 
     return (
         <div className='fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4'>
-            <div className='bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-8'>
+            <div className='bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md md:p-8 p-5 overflow-y-auto max-h-[90vh]'>
                 { /*Header*/ }
                 <header className='mb-6'>
                     <p className='text-blue-400 text-xs uppercase tracking-widest mb-1'>Step { step + 1} of { STEPS.length }</p>

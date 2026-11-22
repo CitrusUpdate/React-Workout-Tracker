@@ -14,6 +14,8 @@ import PlanFilters from "../components/PlanFilters";
 import PlanCard from "../components/PlanCard";
 import WorkoutCardSkeleton from "../components/WorkoutCardSkeleton";
 import PlanCardSkeleton from "../components/PlanCardSkeleton";
+import CreateWorkoutModal from "../components/CreateWorkoutModal";
+import CreatePlanModal from "../components/CreatePlanModal";
 
 export default function TrainingsPage() {
     const[activeTab, setActiveTab] = useState("workouts");
@@ -23,6 +25,7 @@ export default function TrainingsPage() {
     const { authUser } = useAuthStore();
     const userMaxes = authUser?.profile?.maxes || {};
     const activePlanID = authUser?.activePlan?.planId
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         loadPlans();
@@ -45,7 +48,7 @@ export default function TrainingsPage() {
     } = usePlanFilters(rawPlans, activePlanID);
 
     return (
-        <div className="pt-24 min-h-screen bg-gray-950 flex flex-col md:flex-row">
+        <div className="pt-24 min-h-screen bg-gray-950 text-white flex flex-col md:flex-row pr-16">
             <Navbar />
             <Sidebar />
 
@@ -55,6 +58,7 @@ export default function TrainingsPage() {
                 transition={{ duration: 0.3 }}
                 className="flex-1 w-full max-w-7xl mx-auto p-4 flex flex-col md:flex-row gap-8"
             >
+                { isModalOpen ? activeTab === "workouts" ? <CreateWorkoutModal setIsModalOpen={setIsModalOpen} /> : <CreatePlanModal setIsModalOpen={setIsModalOpen} /> : null }
                 
                 <div className="w-full md:w-1/4">
                     {activeTab === "workouts" && (
@@ -119,7 +123,15 @@ export default function TrainingsPage() {
                         )}
                     </div>
 
+                    <button 
+                        className="bg-blue-600 hover:bg-blue-500 text-white py-2 px-8 md:w-full w-auto md:self-center self-end rounded-md text-sm font-semibold transition cursor-pointer mt-4 sticky md:bottom-6 bottom-4 shadow-md shadow-black/40 z-20 "
+                        onClick={() => setIsModalOpen(true)}
+                    >
+                        { activeTab === "workouts" ? "Create Workout" : "Create Training Plan" }
+                    </button>
+
                 </div>
+
 
             </motion.div>
         </div>

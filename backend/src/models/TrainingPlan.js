@@ -44,7 +44,7 @@ TrainingPlanSchema.index({ owner: 1 });
 // auto detect plan type
 TrainingPlanSchema.pre('save', function() {
     const plan = this;
-    if(!plan.days || plan.days.length === 0) return next();
+    if(!plan.days || plan.days.length === 0) return;
 
     const dayTypes = new Set(plan.days.map(day => day.type));
     

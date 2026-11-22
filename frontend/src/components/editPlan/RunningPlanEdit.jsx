@@ -116,7 +116,7 @@ export default function RunningPlanEdit({ dayData, draftPlan, setDraftPlan }) {
                                             <CustomInput
                                                 labelFor={`exerciseName-${dayData?.order}-${index}`}
                                                 name={`exerciseName-${dayData?.order}-${index}`}
-                                                value={exercise?.name || `exercise ${index}`}
+                                                value={exercise?.name || ""}
                                                 onChange={(e) => handleChange(e, index, 'name')}
                                                 placeholder="Your exercise name"
                                                 required={true}
@@ -161,6 +161,7 @@ export default function RunningPlanEdit({ dayData, draftPlan, setDraftPlan }) {
                                         <td className="p-2">
                                             <CustomInput
                                                 labelFor={`targetBPM-${dayData?.order}-${index}`}
+                                                type="number"
                                                 name={`targetBPM-${dayData?.order}-${index}`}
                                                 value={exercise?.targetBPM || 150}
                                                 onChange={(e) => handleChange(e, index, 'targetBPM')}
